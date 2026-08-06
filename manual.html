@@ -424,7 +424,7 @@
       </svg>
       <ol class="legend">
         <li><span class="tag">1</span><span><b>⟳ RESTART</b>　短押しで再起動（表示が乱れた時に）</span></li>
-        <li><span class="tag">2</span><span><b>⚙ 設定</b>　取扱説明書を見る</span></li>
+        <li><span class="tag">2</span><span><b>⚙ 設定</b>　取扱説明書・音量・明るさ</span></li>
         <li><span class="tag">3</span><span><b>01 時計</b>　<span class="only-noclk">ロック中・いまは開けません（→02）</span><span class="only-clk">現在時刻を表示（→02）</span></span></li>
         <li><span class="tag">4</span><span><b>02 翻訳</b>　ことばを英語に翻訳（→03）</span></li>
         <li><span class="tag">5</span><span><b>03 マップ</b>　ブース見取り図（→04）</span></li>
@@ -542,12 +542,12 @@
           <rect x="84" y="0" width="36" height="46" rx="8" fill="rgba(126,150,205,.08)" stroke="rgba(126,150,205,.3)"/><text class="m" x="102" y="32" text-anchor="middle" font-size="17" font-weight="700" fill="#5d6b8c">?</text>
           <rect x="126" y="0" width="36" height="46" rx="8" fill="rgba(126,150,205,.08)" stroke="rgba(126,150,205,.3)"/><text class="m" x="144" y="32" text-anchor="middle" font-size="17" font-weight="700" fill="#5d6b8c">?</text>
           <rect x="168" y="0" width="36" height="46" rx="8" fill="rgba(126,150,205,.08)" stroke="rgba(126,150,205,.3)"/><text class="m" x="186" y="32" text-anchor="middle" font-size="17" font-weight="700" fill="#5d6b8c">?</text>
-          <text x="102" y="68" text-anchor="middle" font-size="10" fill="#8fa0c4">解答に関係する語句 → 英単語が点灯</text>
+          <text x="102" y="68" text-anchor="middle" font-size="10" fill="#8fa0c4">辞書にある語句 → 英単語が点灯</text>
         </g>
         <g transform="translate(750,144)">
           <rect width="204" height="52" rx="10" fill="rgba(255,107,87,.06)" stroke="rgba(255,107,87,.4)"/>
           <text class="m" x="102" y="34" text-anchor="middle" font-size="21" font-weight="700" letter-spacing="4" fill="#ff6b57">error</text>
-          <text x="102" y="72" text-anchor="middle" font-size="10" fill="#8fa0c4">関係ない語句 → error（例：りんご）</text>
+          <text x="102" y="72" text-anchor="middle" font-size="10" fill="#8fa0c4">辞書にない語句 → error</text>
         </g>
       </svg>
     </div>
@@ -559,44 +559,60 @@
 
     <div class="fig">
       <svg viewBox="0 0 980 356" role="img" aria-label="ブース見取り図">
-        <text class="m" x="40" y="48" font-size="9" letter-spacing="4" fill="#6f8dff">LEGEND</text>
-        <circle cx="48" cy="82" r="6" fill="#8fa8ff"/><text x="64" y="87" font-size="12.5" fill="#e8efff">カメラ <tspan class="m" fill="#8fa0c4">×2</tspan></text>
-        <circle cx="48" cy="114" r="6" fill="#f5b562"/><text x="64" y="119" font-size="12.5" fill="#e8efff">イラスト <tspan class="m" fill="#8fa0c4">×12</tspan></text>
-        <circle cx="48" cy="146" r="6" fill="#5d6b8c"/><text x="64" y="151" font-size="12.5" fill="#e8efff">備品 <tspan class="m" fill="#8fa0c4">×1</tspan></text>
-        <text x="40" y="196" font-size="10" fill="#8fa0c4">開くたびに 壁 → 配置物 の順で</text>
-        <text x="40" y="212" font-size="10" fill="#8fa0c4">描き込みアニメーション</text>
-        <text x="40" y="244" font-size="10" fill="#8fa0c4">図中の英字＝掲示イラストの語</text>
-        <text x="40" y="260" font-size="10" fill="#8fa0c4">（実物は「はくしゅ (clap)」等）</text>
-        <rect x="250" y="16" width="480" height="300" rx="8" fill="rgba(10,16,31,.55)" stroke="#9db7ff" stroke-width="3"/>
-        <line x1="448" y1="316" x2="532" y2="316" stroke="#0d1424" stroke-width="8"/>
-        <line x1="448" y1="316" x2="532" y2="316" stroke="#f5b562" stroke-width="2" stroke-dasharray="6 5"/>
-        <text x="490" y="340" text-anchor="middle" font-size="12" letter-spacing="4" fill="#8fa0c4">入口</text>
-        <g transform="translate(340,80)">
-          <circle r="26" fill="none" stroke="#8fa8ff" stroke-dasharray="3 4" opacity=".55"/>
-          <rect x="-18" y="-12" width="36" height="24" rx="5" fill="rgba(143,168,255,.15)" stroke="#8fa8ff" stroke-width="2"/>
-          <circle r="6" fill="none" stroke="#8fa8ff" stroke-width="2"/><circle r="2" fill="#8fa8ff"/>
-          <text y="44" text-anchor="middle" font-size="9.5" fill="#e8efff">カメラ①</text>
-        </g>
-        <g transform="translate(640,80)">
-          <circle r="26" fill="none" stroke="#8fa8ff" stroke-dasharray="3 4" opacity=".55"/>
-          <rect x="-18" y="-12" width="36" height="24" rx="5" fill="rgba(143,168,255,.15)" stroke="#8fa8ff" stroke-width="2"/>
-          <circle r="6" fill="none" stroke="#8fa8ff" stroke-width="2"/><circle r="2" fill="#8fa8ff"/>
-          <text y="44" text-anchor="middle" font-size="9.5" fill="#e8efff">カメラ②</text>
-        </g>
-        <g fill="#f5b562">
-          <circle cx="334" cy="134" r="5.5"/><circle cx="433" cy="104" r="5.5"/><circle cx="532" cy="86" r="5.5"/>
-          <circle cx="316" cy="221" r="5.5"/><circle cx="409" cy="191" r="5.5"/><circle cx="505" cy="212" r="5.5"/>
-          <circle cx="589" cy="167" r="5.5"/><circle cx="364" cy="265" r="5.5"/><circle cx="460" cy="261" r="5.5"/>
-          <circle cx="562" cy="266" r="5.5"/><circle cx="664" cy="218" r="5.5"/><circle cx="643" cy="286" r="5.5"/>
-        </g>
-        <g font-size="9" fill="#e8efff" text-anchor="middle">
-          <text class="m" x="334" y="150">bear</text><text class="m" x="433" y="120">clap</text><text class="m" x="532" y="102">eco</text>
-          <text class="m" x="316" y="237">top</text><text class="m" x="409" y="207">stop</text><text class="m" x="505" y="228">net</text>
-          <text class="m" x="589" y="183">hunt</text><text class="m" x="364" y="281">pen</text><text class="m" x="460" y="277">fact</text>
-          <text class="m" x="562" y="282">lion</text><text class="m" x="664" y="234">stick</text><text class="m" x="643" y="302">train</text>
-        </g>
-        <rect x="665" y="112" width="30" height="20" rx="4" fill="none" stroke="#5d6b8c" stroke-width="2" stroke-dasharray="5 4"/>
-        <text x="680" y="148" text-anchor="middle" font-size="8.5" fill="#8fa0c4">ボックス</text>
+          <!-- 部屋の外壁（上の壁に入口ぶんの切れ目） -->
+          <path d="M140,34 H250 M350,34 H840 V326 H140 V34"
+                fill="none" stroke="#9db7ff" stroke-width="3" stroke-linejoin="round"/>
+          <line x1="250" y1="34" x2="350" y2="34" stroke="#f5b562" stroke-width="2" stroke-dasharray="6 5"/>
+          <text x="300" y="24" text-anchor="middle" font-size="13" fill="#8fa0c4" letter-spacing="3">入口</text>
+
+          <!-- 置かれるイラスト（英語 ─ 日本語） -->
+          <text x="172" y="86" font-size="13" fill="#e8efff" letter-spacing="2">置かれるイラスト</text>
+          <line x1="172" y1="94" x2="420" y2="94" stroke="rgba(245,181,98,.45)"/>
+          <circle cx="162" cy="112" r="3.5" fill="#f5b562" opacity=".85"/><text x="172" y="116" font-size="12" fill="#e8efff"><tspan class="m" fill="#f5b562">Bear</tspan><tspan fill="#8fa0c4"> ─ </tspan>クマ</text>
+          <circle cx="162" cy="139" r="3.5" fill="#f5b562" opacity=".85"/><text x="172" y="143" font-size="12" fill="#e8efff"><tspan class="m" fill="#f5b562">Clap</tspan><tspan fill="#8fa0c4"> ─ </tspan>はくしゅ</text>
+          <circle cx="162" cy="166" r="3.5" fill="#f5b562" opacity=".85"/><text x="172" y="170" font-size="12" fill="#e8efff"><tspan class="m" fill="#f5b562">Eco</tspan><tspan fill="#8fa0c4"> ─ </tspan>エコ</text>
+          <circle cx="162" cy="193" r="3.5" fill="#f5b562" opacity=".85"/><text x="172" y="197" font-size="12" fill="#e8efff"><tspan class="m" fill="#f5b562">Top</tspan><tspan fill="#8fa0c4"> ─ </tspan>コマ</text>
+          <circle cx="162" cy="220" r="3.5" fill="#f5b562" opacity=".85"/><text x="172" y="224" font-size="12" fill="#e8efff"><tspan class="m" fill="#f5b562">Stop</tspan><tspan fill="#8fa0c4"> ─ </tspan>ストップ</text>
+          <circle cx="162" cy="247" r="3.5" fill="#f5b562" opacity=".85"/><text x="172" y="251" font-size="12" fill="#e8efff"><tspan class="m" fill="#f5b562">Net</tspan><tspan fill="#8fa0c4"> ─ </tspan>あみ</text>
+          <circle cx="294" cy="112" r="3.5" fill="#f5b562" opacity=".85"/><text x="304" y="116" font-size="12" fill="#e8efff"><tspan class="m" fill="#f5b562">Hunt</tspan><tspan fill="#8fa0c4"> ─ </tspan>かり</text>
+          <circle cx="294" cy="139" r="3.5" fill="#f5b562" opacity=".85"/><text x="304" y="143" font-size="12" fill="#e8efff"><tspan class="m" fill="#f5b562">Pen</tspan><tspan fill="#8fa0c4"> ─ </tspan>ペン</text>
+          <circle cx="294" cy="166" r="3.5" fill="#f5b562" opacity=".85"/><text x="304" y="170" font-size="12" fill="#e8efff"><tspan class="m" fill="#f5b562">Fact</tspan><tspan fill="#8fa0c4"> ─ </tspan>じじつ</text>
+          <circle cx="294" cy="193" r="3.5" fill="#f5b562" opacity=".85"/><text x="304" y="197" font-size="12" fill="#e8efff"><tspan class="m" fill="#f5b562">Lion</tspan><tspan fill="#8fa0c4"> ─ </tspan>ライオン</text>
+          <circle cx="294" cy="220" r="3.5" fill="#f5b562" opacity=".85"/><text x="304" y="224" font-size="12" fill="#e8efff"><tspan class="m" fill="#f5b562">Stick</tspan><tspan fill="#8fa0c4"> ─ </tspan>ぼう</text>
+          <circle cx="294" cy="247" r="3.5" fill="#f5b562" opacity=".85"/><text x="304" y="251" font-size="12" fill="#e8efff"><tspan class="m" fill="#f5b562">Train</tspan><tspan fill="#8fa0c4"> ─ </tspan>でんしゃ</text>
+
+          <!-- 机（左：カメラと鏡／右：金庫） -->
+          <rect x="500" y="86" width="164" height="212" rx="6" fill="rgba(150,178,255,.05)" stroke="#5d6b8c" stroke-width="2"/>
+          <text x="510" y="290" font-size="11" fill="#8fa0c4" letter-spacing="2">机</text>
+          <rect x="694" y="86" width="130" height="212" rx="6" fill="rgba(150,178,255,.05)" stroke="#5d6b8c" stroke-width="2"/>
+          <text x="704" y="290" font-size="11" fill="#8fa0c4" letter-spacing="2">机</text>
+
+          <!-- カメラ①② -->
+          <g transform="translate(596,138)">
+            <rect x="-38" y="-28" width="76" height="56" rx="7" fill="rgba(143,168,255,.16)" stroke="#8fa8ff" stroke-width="2"/>
+            <circle cy="-3" r="10" fill="none" stroke="#8fa8ff" stroke-width="2"/><circle cy="-3" r="3.5" fill="#8fa8ff"/>
+            <text y="20" text-anchor="middle" font-size="11" fill="#e8efff" font-weight="bold">カメラ①</text>
+          </g>
+          <g transform="translate(596,246)">
+            <rect x="-38" y="-28" width="76" height="56" rx="7" fill="rgba(143,168,255,.16)" stroke="#8fa8ff" stroke-width="2"/>
+            <circle cy="-3" r="10" fill="none" stroke="#8fa8ff" stroke-width="2"/><circle cy="-3" r="3.5" fill="#8fa8ff"/>
+            <text y="20" text-anchor="middle" font-size="11" fill="#e8efff" font-weight="bold">カメラ②</text>
+          </g>
+
+          <!-- 鏡 -->
+          <g transform="translate(520,192)">
+            <rect x="-5" y="-34" width="10" height="68" rx="2" fill="rgba(157,183,255,.35)" stroke="#9db7ff" stroke-width="1.8"/>
+            <text y="-42" text-anchor="middle" font-size="11" fill="#e8efff">鏡</text>
+          </g>
+
+          <!-- 金庫 -->
+          <g transform="translate(758,140)">
+            <rect x="-36" y="-34" width="72" height="68" rx="5" fill="rgba(143,168,255,.18)" stroke="#8fa8ff" stroke-width="2.2"/>
+            <circle cx="5" r="11" fill="none" stroke="#8fa8ff" stroke-width="2.5"/>
+            <line x1="5" y1="-11" x2="5" y2="11" stroke="#8fa8ff" stroke-width="2.5"/>
+            <line x1="-6" y1="0" x2="16" y2="0" stroke="#8fa8ff" stroke-width="2.5"/>
+            <text y="50" text-anchor="middle" font-size="13" fill="#e8efff" font-weight="bold" letter-spacing="2">金庫</text>
+          </g>
       </svg>
     </div>
   </section>
@@ -625,8 +641,8 @@
           <li><span class="tag">1</span><span><b>カメラ１・カメラ２</b>のわくに、リストからワードを入れる（カメラ２は空でもよい）</span></li>
           <li><span class="tag">2</span><span><span class="kbd">実行</span> を押す ─ ワードは<b>頭文字が消えて合体</b>し、1つの「コマンド」になる</span></li>
           <li><span class="tag">3</span><span>コマンドに応じて<b>看板の文字が点灯⇄消灯</b>したり、端末に変化が起きる（効果は「コマンドの効果：」に表示）</span></li>
-          <li><span class="tag">4</span><span>存在しないコマンドは<b>無反応</b>。同じコマンドは<b>何度でも</b>実行でき、押すたびに点灯⇄消灯が入れかわる</span></li>
-          <li><span class="tag">5</span><span><span class="kbd">リセット</span> ＝ 看板の点灯と、これまでのコマンドの効果を<b>すべて元に戻す</b></span></li>
+          <li><span class="tag">4</span><span>存在しないコマンドは<b>無反応</b>。同じコマンドが使えるのは<b>1回だけ</b></span></li>
+          <li><span class="tag">5</span><span>使える回数には限りがある（画面の<b>コマンド残り回数</b>を参照）</span></li>
           <li><span class="tag">6</span><span>目標は看板の<b>6つの枠をすべて点灯</b>させること</span></li>
         </ol>
       </div>
@@ -643,7 +659,7 @@
           <tr><td><span class="kbd">タップ</span>（待機画面）</td><td>起動モーション開始</td></tr>
           <tr><td><span class="kbd">タップ</span>（起動中）</td><td>スキップしてホームへ</td></tr>
           <tr><td><span class="kbd">⟳ RESTART</span> 短押し</td><td>再起動モーション → ホーム</td></tr>
-          <tr><td><span class="kbd">⚙ 設定</span></td><td>取扱説明書を見る</td></tr>
+          <tr><td><span class="kbd">⚙ 設定</span></td><td>取扱説明書・音量・明るさ</td></tr>
           <tr><td>画面のどこかをタッチ</td><td>全画面に自動復帰</td></tr>
           <tr><td>ロック中のカードをタップ</td><td>開かず、少し揺れる</td></tr>
         </tbody>
