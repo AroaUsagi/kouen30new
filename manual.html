@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PARALLELS-OS 取扱説明書</title>
+<style>
+  /* ============================================================
+     PARALLELS-OS 端末 取扱説明書（図解版）
+     端末との連動：
+       ?cmd=1 … 05章（コマンド）が解禁版になる
+       ?clk=1 … 02章（時計）が解禁版になる
+       iframe内表示（端末内ビューア）では「端末へ戻る」リンクを自動非表示
+     ============================================================ */
+  :root{
+    --void:#070b13; --panel:#0d1424; --panel2:#0a101f;
+    --line:rgba(150,178,255,.18);
+    --ink:#e8efff; --sub:#8fa0c4;
+    --pulse:#6f8dff; --pulse2:#9db7ff;
+    --amber:#f5b562; --alert:#ff6b57; --red:#ff5252;
+    --mono:"Cascadia Mono","Consolas","Courier New",monospace;
+  }
+  /* 時計表示用フォント（端末と同じ nyashi-kai2.ttf を同フォルダに置く） */
+  @font-face{
+    font-family:"NyashiKai2";
+    src:url("nyashi-kai2.ttf") format("truetype");
+    font-display:swap;
+  }
+  svg text.clk{font-family:"NyashiKai2","Cascadia Mono","Consolas",monospace;}
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; background:var(--void); color:var(--ink);
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic UI","Meiryo",sans-serif;
+    line-height:1.65;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+  }
+  body::before{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+    background:
+      repeating-linear-gradient(0deg, rgba(150,178,255,.04) 0 1px, transparent 1px 56px),
+      repeating-linear-gradient(90deg, rgba(150,178,255,.04) 0 1px, transparent 1px 56px);
+    mask-image:radial-gradient(120% 80% at 50% 0%, #000 40%, transparent 100%);
+  }
+  .page{position:relative; z-index:1; max-width:1060px; margin:0 auto; padding:56px 28px 72px;}
+
+  .kicker{font:700 .66rem var(--mono); letter-spacing:.5em; color:var(--sub);}
+  h1{
+    margin:14px 0 0; font-family:var(--mono); font-weight:700;
+    font-size:clamp(2rem, 5.4vw, 3.4rem); letter-spacing:.3em; line-height:1.15;
+  }
+  h1 .os{color:var(--pulse); text-shadow:0 0 26px rgba(111,141,255,.35);}
+  .h1-jp{margin-top:6px; font-size:1.05rem; font-weight:700; letter-spacing:.55em; color:var(--ink);}
+  .meta{display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:20px;}
+  .meta span{
+    font:600 .66rem var(--mono); letter-spacing:.22em; color:var(--sub);
+    border:1px solid var(--line); border-radius:999px; padding:5px 14px;
+  }
+  /* 端末へ戻るリンク */
+  .backlink{
+    font:700 .66rem var(--mono); letter-spacing:.2em; color:var(--ink);
+    border:1px solid rgba(111,141,255,.5); border-radius:999px; padding:6px 16px;
+    text-decoration:none; transition:.15s; background:rgba(111,141,255,.08);
+  }
+  .backlink:hover{border-color:var(--pulse); box-shadow:0 0 14px rgba(111,141,255,.25);}
+  .backlink:focus-visible{outline:2px solid var(--pulse); outline-offset:2px;}
+  .backfoot{margin-top:64px; text-align:center;}
+
+  .toc{display:flex; flex-wrap:wrap; gap:8px; margin-top:26px;}
+  .toc a{
+    font:700 .66rem var(--mono); letter-spacing:.2em; color:var(--sub);
+    border:1px solid var(--line); border-radius:999px; padding:6px 14px;
+    text-decoration:none; transition:.15s;
+  }
+  .toc a:hover{color:var(--ink); border-color:var(--pulse); box-shadow:0 0 12px rgba(111,141,255,.2);}
+  .toc a:focus-visible{outline:2px solid var(--pulse); outline-offset:2px; color:var(--ink);}
+
+  .sec{margin-top:68px; scroll-margin-top:24px;}
+  .sec-head{display:flex; align-items:baseline; gap:18px; border-bottom:1px solid var(--line); padding-bottom:12px;}
+  .sec-no{
+    font:800 2.6rem var(--mono); line-height:1; color:transparent;
+    -webkit-text-stroke:1.3px rgba(111,141,255,.85);
+  }
+  .sec-head h2{margin:0; font-size:1.2rem; letter-spacing:.3em; text-indent:.1em;}
+  .sec-en{margin-left:auto; font:700 .6rem var(--mono); letter-spacing:.42em; color:var(--sub);}
+
+  .fig{
+    margin-top:20px; padding:20px 22px;
+    background:linear-gradient(180deg, var(--panel), var(--panel2));
+    border:1px solid var(--line); border-radius:18px;
+    box-shadow:0 18px 40px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.04);
+  }
+  .fig svg{display:block; width:100%; height:auto;}
+  .fig + .fig{margin-top:14px;}
+  svg text{font-family:"Hiragino Kaku Gothic ProN","Yu Gothic UI","Meiryo",sans-serif;}
+  svg text.m{font-family:var(--mono);}
+
+  .notes{display:flex; flex-wrap:wrap; gap:8px; margin-top:14px;}
+  .note{font-size:.74rem; color:var(--sub); border:1px dashed var(--line); border-radius:999px; padding:5px 14px;}
+  .note b{color:var(--ink); font-weight:600;}
+  .note.warn{border-color:rgba(245,181,98,.45); color:var(--amber);}
+  .legend{display:grid; grid-template-columns:1fr 1fr; gap:10px 28px; margin-top:16px; padding:0; list-style:none;}
+  .legend li{display:flex; gap:12px; font-size:.85rem; align-items:flex-start;}
+  .tag{
+    flex:0 0 auto; width:22px; height:22px; border-radius:50%;
+    background:var(--pulse); color:#0a0f1e;
+    font:700 .78rem/22px var(--mono); text-align:center; margin-top:2px;
+  }
+  .flow{display:flex; align-items:center; flex-wrap:wrap; gap:10px; margin-top:14px; font-size:.85rem; color:var(--sub);}
+  .fa{color:var(--pulse); font-family:var(--mono); font-weight:700;}
+  .kbd{
+    display:inline-block; font:600 .78rem var(--mono); color:var(--ink);
+    background:linear-gradient(180deg,#202b48,#141c33);
+    border:1px solid rgba(150,178,255,.28); border-bottom-color:rgba(150,178,255,.1);
+    border-radius:7px; padding:3px 11px; margin:0 2px;
+    box-shadow:0 2px 0 #070b16;
+  }
+
+  table{width:100%; border-collapse:collapse; margin-top:16px; font-size:.86rem;}
+  th{
+    font:700 .62rem var(--mono); letter-spacing:.28em; color:var(--sub);
+    text-align:left; padding:8px 12px; border-bottom:1px solid var(--line);
+  }
+  td{padding:10px 12px; border-bottom:1px solid rgba(150,178,255,.09); vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  .err{font-family:var(--mono); font-weight:700; letter-spacing:.12em; color:var(--alert);}
+
+  /* ---- 秘匿表示 ---- */
+  .bar{
+    display:inline-block; width:150px; height:.85em; vertical-align:-.06em;
+    background:#04060c; border-radius:3px;
+    box-shadow:inset 0 0 0 1px rgba(150,178,255,.1);
+  }
+  .redfig{position:relative; padding:30px 34px 26px; overflow:hidden;}
+  .redline{
+    height:13px; margin:11px 0; border-radius:3px; background:#04060c;
+    box-shadow:inset 0 0 0 1px rgba(150,178,255,.08);
+  }
+  .stamp{
+    position:absolute; top:36px; right:44px; transform:rotate(-7deg);
+    border:2px solid var(--amber); color:var(--amber); border-radius:8px;
+    padding:7px 20px 7px 26px; font:700 1.05rem var(--mono); letter-spacing:.35em;
+  }
+  .redcap{
+    margin-top:20px; text-align:center;
+    font:600 .62rem var(--mono); letter-spacing:.35em; color:rgba(143,160,196,.55);
+  }
+
+  /* ---- 端末との連動ゲート ---- */
+  .only-open{display:none;}
+  .cmd-open .only-open{display:block;}
+  .cmd-open span.only-open{display:inline;}
+  .cmd-open .only-locked{display:none;}
+  .only-clk{display:none;}
+  .clk-open .only-clk{display:block;}
+  .clk-open span.only-clk{display:inline;}
+  .clk-open .only-noclk{display:none;}
+  .embedded .backlink, .embedded .backfoot{display:none;}
+  /* 図版の出し分け（時計の解禁前後 / コマンドの解禁前後） */
+  .gclk{display:none;}
+  .clk-open .gclk{display:block;}
+  .clk-open .gnoclk{display:none;}
+  .gcmd{display:none;}
+  .cmd-open .gcmd{display:block;}
+  .cmd-open .gnocmd{display:none;}
+  .cmd-open li.only-open{display:flex;}
+
+  footer{margin-top:28px; text-align:center; font:600 .6rem var(--mono); letter-spacing:.4em; color:rgba(143,160,196,.5);}
+
+  @media (max-width:720px){
+    .page{padding:40px 16px 60px;}
+    .legend{grid-template-columns:1fr;}
+    .sec-no{font-size:2rem;}
+    .stamp{top:20px; right:18px; font-size:.85rem;}
+  }
+  @media print{
+    .toc, .backlink, .backfoot{display:none;}
+    .sec{break-inside:avoid-page; margin-top:44px;}
+  }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#6f8dff"/>
+    </marker>
+  </defs>
+</svg>
+
+<div class="page">
+
+  <!-- ================= 表紙 ================= -->
+  <header>
+    <div class="kicker">OPERATION MANUAL — 図解版</div>
+    <h1>PARALLELS<span class="os">-OS</span></h1>
+    <div class="h1-jp">端末 取扱説明書</div>
+    <div class="meta">
+      <span>ver 0.9.2</span><span>端末付属マニュアル</span>
+      <a class="backlink" href="tanmatsu.html">← 端末へ戻る</a>
+    </div>
+    <nav class="toc">
+      <a href="#s00">00 起動</a><a href="#s01">01 ホーム</a><a href="#s02">02 時計</a>
+      <a href="#s03">03 翻訳</a><a href="#s04">04 マップ</a>
+      <a href="#s05"><span class="only-locked">05 ▓▓▓▓</span><span class="only-open">05 コマンド</span></a>
+      <a href="#s06">06 早見表</a>
+    </nav>
+  </header>
+
+  <!-- ================= 00 起動 ================= -->
+  <section class="sec" id="s00">
+    <div class="sec-head"><span class="sec-no">00</span><h2>起動と再起動</h2><span class="sec-en">BOOT / RESTART</span></div>
+
+    <div class="fig">
+      <svg viewBox="0 0 980 252" role="img" aria-label="起動の流れ">
+        <g transform="translate(20,18)">
+          <rect width="252" height="178" rx="14" fill="#0a101f" stroke="rgba(150,178,255,.28)"/>
+          <g transform="translate(126,84)" stroke="#9db7ff" stroke-width="4" fill="none" stroke-linecap="round">
+            <path d="M 20 -22 A 30 30 0 1 1 -20 -22"/>
+            <line x1="0" y1="-34" x2="0" y2="-4"/>
+          </g>
+          <text class="m" x="126" y="146" text-anchor="middle" font-size="10" letter-spacing="4" fill="#8fa0c4">TAP TO START</text>
+        </g>
+        <g>
+          <circle cx="312" cy="72" r="6" fill="#6f8dff"/>
+          <circle cx="312" cy="72" r="11" fill="none" stroke="#6f8dff" opacity=".5"/>
+          <circle cx="312" cy="72" r="16" fill="none" stroke="#6f8dff" opacity=".25"/>
+          <text x="312" y="46" text-anchor="middle" font-size="12" fill="#e8efff">タップ</text>
+          <line x1="288" y1="107" x2="352" y2="107" stroke="#6f8dff" stroke-width="2" marker-end="url(#ar)"/>
+        </g>
+        <g transform="translate(364,18)">
+          <rect width="252" height="178" rx="14" fill="#0a101f" stroke="rgba(150,178,255,.28)"/>
+          <text class="m" x="126" y="66" text-anchor="middle" font-size="19" font-weight="700" letter-spacing="5" fill="#e8efff">PARALLELS<tspan fill="#6f8dff">-OS</tspan></text>
+          <rect x="56" y="86" width="140" height="3" rx="1.5" fill="rgba(150,178,255,.15)"/>
+          <rect x="56" y="86" width="92" height="3" rx="1.5" fill="#6f8dff"/>
+          <text class="m" x="126" y="114" text-anchor="middle" font-size="8" letter-spacing="2" fill="#8fa0c4">SYSTEM CHECK ... OK</text>
+          <text class="m" x="126" y="128" text-anchor="middle" font-size="8" letter-spacing="2" fill="#8fa0c4">STAGE LINK ... OK</text>
+          <text class="m" x="126" y="142" text-anchor="middle" font-size="8" letter-spacing="2" fill="#8fa0c4">READY</text>
+          <text x="126" y="166" text-anchor="middle" font-size="10" fill="#f5b562">タップ ＝ スキップ</text>
+        </g>
+        <g>
+          <text x="663" y="84" text-anchor="middle" font-size="11" fill="#e8efff">自動</text>
+          <text class="m" x="663" y="98" text-anchor="middle" font-size="9" fill="#8fa0c4">約2.6秒</text>
+          <line x1="632" y1="107" x2="694" y2="107" stroke="#6f8dff" stroke-width="2" marker-end="url(#ar)"/>
+        </g>
+        <g transform="translate(708,18)">
+          <rect width="252" height="178" rx="14" fill="#0a101f" stroke="rgba(150,178,255,.28)"/>
+          <text class="m" x="126" y="44" text-anchor="middle" font-size="12" font-weight="700" letter-spacing="3" fill="#e8efff">PARALLELS<tspan fill="#6f8dff">-OS</tspan></text>
+          <!-- コマンド解禁前：3枚 -->
+          <g class="gnocmd">
+            <g stroke="rgba(150,178,255,.3)" fill="#121a2e">
+              <rect x="19" y="66" width="62" height="70" rx="8"/>
+              <rect x="95" y="66" width="62" height="70" rx="8"/>
+              <rect x="171" y="66" width="62" height="70" rx="8"/>
+            </g>
+            <g class="gnoclk" transform="translate(50,96)" stroke="#8fa0c4" stroke-width="2.5" fill="none">
+              <rect x="-8" y="-2" width="16" height="13" rx="3"/>
+              <path d="M-4 -2 v-4 a4 4 0 0 1 8 0 v4"/>
+            </g>
+            <text x="50" y="156" text-anchor="middle" font-size="9" fill="#8fa0c4">時計</text>
+            <text x="126" y="156" text-anchor="middle" font-size="9" fill="#8fa0c4">翻訳</text>
+            <text x="202" y="156" text-anchor="middle" font-size="9" fill="#8fa0c4">マップ</text>
+          </g>
+          <!-- コマンド解禁後：4枚 -->
+          <g class="gcmd">
+            <g stroke="rgba(150,178,255,.3)" fill="#121a2e">
+              <rect x="14" y="66" width="52" height="70" rx="8"/>
+              <rect x="72" y="66" width="52" height="70" rx="8"/>
+              <rect x="130" y="66" width="52" height="70" rx="8"/>
+              <rect x="188" y="66" width="52" height="70" rx="8"/>
+            </g>
+            <g class="gnoclk" transform="translate(40,96)" stroke="#8fa0c4" stroke-width="2.5" fill="none">
+              <rect x="-8" y="-2" width="16" height="13" rx="3"/>
+              <path d="M-4 -2 v-4 a4 4 0 0 1 8 0 v4"/>
+            </g>
+            <text x="40" y="156" text-anchor="middle" font-size="8.5" fill="#8fa0c4">時計</text>
+            <text x="98" y="156" text-anchor="middle" font-size="8.5" fill="#8fa0c4">翻訳</text>
+            <text x="156" y="156" text-anchor="middle" font-size="8.5" fill="#8fa0c4">マップ</text>
+            <text x="214" y="156" text-anchor="middle" font-size="8.5" fill="#8fa0c4">コマンド</text>
+          </g>
+        </g>
+        <text x="146" y="234" text-anchor="middle" font-size="11.5" letter-spacing="3" fill="#8fa0c4">待機画面</text>
+        <text x="490" y="234" text-anchor="middle" font-size="11.5" letter-spacing="3" fill="#8fa0c4">起動モーション</text>
+        <text x="834" y="234" text-anchor="middle" font-size="11.5" letter-spacing="3" fill="#8fa0c4">ホーム</text>
+      </svg>
+    </div>
+    <div class="flow"><span class="kbd">⟳ RESTART</span><span class="fa">→</span>短押しで同じ起動モーションを再生（どの画面からでもホームへ戻る）</div>
+  </section>
+
+  <!-- ================= 01 ホーム ================= -->
+  <section class="sec" id="s01">
+    <div class="sec-head"><span class="sec-no">01</span><h2>ホーム画面</h2><span class="sec-en">HOME</span></div>
+
+    <div class="fig">
+      <svg viewBox="0 0 980 600" role="img" aria-label="ホーム画面の各部">
+        <rect x="20" y="16" width="940" height="560" rx="20" fill="#0c1322" stroke="rgba(150,178,255,.28)" stroke-width="1.5"/>
+        <line x1="20" y1="78" x2="960" y2="78" stroke="rgba(150,178,255,.18)"/>
+        <rect x="44" y="36" width="128" height="28" rx="9" fill="#121a2e" stroke="rgba(150,178,255,.3)"/>
+        <text class="m" x="108" y="54" text-anchor="middle" font-size="11" letter-spacing="2" fill="#8fa0c4">⟳ RESTART</text>
+        <circle cx="188" cy="50" r="11" fill="#6f8dff"/><text class="m" x="188" y="54" text-anchor="middle" font-size="11" font-weight="700" fill="#0a0f1e">1</text>
+        <rect x="818" y="36" width="110" height="28" rx="9" fill="#121a2e" stroke="rgba(150,178,255,.3)"/>
+        <text x="873" y="54" text-anchor="middle" font-size="11" letter-spacing="2" fill="#8fa0c4">⚙ 設定</text>
+        <circle cx="800" cy="50" r="11" fill="#6f8dff"/><text class="m" x="800" y="54" text-anchor="middle" font-size="11" font-weight="700" fill="#0a0f1e">2</text>
+        <text class="m" x="490" y="182" text-anchor="middle" font-size="46" font-weight="700" letter-spacing="14" fill="#e8efff">PARALLELS<tspan fill="#6f8dff">-OS</tspan></text>
+        <text class="m" x="490" y="216" text-anchor="middle" font-size="12" letter-spacing="6" fill="#8fa0c4">端末 ver 0.9.2</text>
+
+        <!-- コマンド解禁前：3枚 -->
+        <g class="gnocmd">
+        <!-- カード 01 時計（ロック） -->
+        <g transform="translate(172,256)">
+          <rect width="196" height="250" rx="18" fill="#121a2e" stroke="rgba(150,178,255,.22)"/>
+          <text class="m" x="16" y="26" font-size="11" fill="#6f8dff">01</text>
+          <text class="m" x="180" y="26" text-anchor="end" font-size="8" letter-spacing="3" fill="#8fa0c4">CLOCK</text>
+          <rect x="16" y="40" width="164" height="136" rx="10" fill="#0a101f" stroke="rgba(150,178,255,.18)"/>
+          <g class="gnoclk" transform="translate(98,98)" stroke="#8fa0c4" stroke-width="3" fill="none">
+            <rect x="-16" y="-6" width="32" height="26" rx="5"/>
+            <path d="M-8 -6 v-6 a8 8 0 0 1 16 0 v6"/>
+            <circle cy="6" r="3" fill="#8fa0c4" stroke="none"/>
+          </g>
+          <text class="m gnoclk" x="98" y="152" text-anchor="middle" font-size="8" letter-spacing="4" fill="#8fa0c4">LOCKED</text>
+          <text class="clk gclk" x="98" y="116" text-anchor="middle" font-size="30" font-weight="700" fill="#ff5252">12:00<tspan font-size="19" opacity="0.72">.00</tspan></text>
+          <text class="m gclk" x="98" y="146" text-anchor="middle" font-size="8" letter-spacing="3" fill="#8fa0c4">08.30 SUN</text>
+          <text x="98" y="216" text-anchor="middle" font-size="16" letter-spacing="6" fill="#e8efff">時計</text>
+          <text class="m" x="176" y="216" text-anchor="end" font-size="14" fill="#8fa0c4">›</text>
+        </g>
+        <circle cx="360" cy="268" r="11" fill="#6f8dff"/><text class="m" x="360" y="272" text-anchor="middle" font-size="11" font-weight="700" fill="#0a0f1e">3</text>
+
+        <!-- カード 02 翻訳 -->
+        <g transform="translate(392,256)">
+          <rect width="196" height="250" rx="18" fill="#121a2e" stroke="rgba(150,178,255,.22)"/>
+          <text class="m" x="16" y="26" font-size="11" fill="#6f8dff">02</text>
+          <text class="m" x="180" y="26" text-anchor="end" font-size="8" letter-spacing="3" fill="#8fa0c4">TRANSLATE</text>
+          <rect x="16" y="40" width="164" height="136" rx="10" fill="#0a101f" stroke="rgba(150,178,255,.18)"/>
+          <g transform="translate(98,106)">
+            <rect x="-38" y="-34" width="42" height="42" rx="8" fill="none" stroke="#9db7ff" stroke-width="3"/>
+            <text x="-17" y="-4" text-anchor="middle" font-size="20" font-weight="700" fill="#9db7ff">あ</text>
+            <rect x="-6" y="-10" width="42" height="42" rx="8" fill="#0d1424" stroke="#9db7ff" stroke-width="3"/>
+            <text class="m" x="15" y="20" text-anchor="middle" font-size="20" font-weight="700" fill="#9db7ff">A</text>
+          </g>
+          <text x="98" y="216" text-anchor="middle" font-size="16" letter-spacing="6" fill="#e8efff">翻訳</text>
+          <text class="m" x="176" y="216" text-anchor="end" font-size="14" fill="#8fa0c4">›</text>
+        </g>
+        <circle cx="580" cy="268" r="11" fill="#6f8dff"/><text class="m" x="580" y="272" text-anchor="middle" font-size="11" font-weight="700" fill="#0a0f1e">4</text>
+
+        <!-- カード 03 マップ -->
+        <g transform="translate(612,256)">
+          <rect width="196" height="250" rx="18" fill="#121a2e" stroke="rgba(150,178,255,.22)"/>
+          <text class="m" x="16" y="26" font-size="11" fill="#6f8dff">03</text>
+          <text class="m" x="180" y="26" text-anchor="end" font-size="8" letter-spacing="3" fill="#8fa0c4">MAP</text>
+          <rect x="16" y="40" width="164" height="136" rx="10" fill="#0a101f" stroke="rgba(150,178,255,.18)"/>
+          <g transform="translate(98,108)" stroke="#9db7ff" stroke-width="3" fill="none" stroke-linejoin="round">
+            <path d="M-30 -18 L-12 -26 L4 -18 L26 -26 V18 L4 26 L-12 18 L-30 26 Z"/>
+            <path d="M-12 -26 V18 M4 -18 V26"/>
+          </g>
+          <text x="98" y="216" text-anchor="middle" font-size="16" letter-spacing="6" fill="#e8efff">マップ</text>
+          <text class="m" x="176" y="216" text-anchor="end" font-size="14" fill="#8fa0c4">›</text>
+        </g>
+        <circle cx="800" cy="268" r="11" fill="#6f8dff"/><text class="m" x="800" y="272" text-anchor="middle" font-size="11" font-weight="700" fill="#0a0f1e">5</text>
+        </g>
+        <!-- コマンド解禁後：4枚 -->
+        <g class="gcmd" transform="translate(100,262) scale(0.85)">
+          <g transform="translate(0,0)">
+            <rect width="196" height="250" rx="18" fill="#121a2e" stroke="rgba(150,178,255,.22)"/>
+            <text class="m" x="16" y="26" font-size="11" fill="#6f8dff">01</text>
+            <text class="m" x="180" y="26" text-anchor="end" font-size="8" letter-spacing="3" fill="#8fa0c4">CLOCK</text>
+            <rect x="16" y="40" width="164" height="136" rx="10" fill="#0a101f" stroke="rgba(150,178,255,.18)"/>
+            <g class="gnoclk" transform="translate(98,98)" stroke="#8fa0c4" stroke-width="3" fill="none">
+              <rect x="-16" y="-6" width="32" height="26" rx="5"/>
+              <path d="M-8 -6 v-6 a8 8 0 0 1 16 0 v6"/>
+              <circle cy="6" r="3" fill="#8fa0c4" stroke="none"/>
+            </g>
+            <text class="m gnoclk" x="98" y="152" text-anchor="middle" font-size="8" letter-spacing="4" fill="#8fa0c4">LOCKED</text>
+            <text class="clk gclk" x="98" y="116" text-anchor="middle" font-size="30" font-weight="700" fill="#ff5252">12:00<tspan font-size="19" opacity="0.72">.00</tspan></text>
+            <text class="m gclk" x="98" y="146" text-anchor="middle" font-size="8" letter-spacing="3" fill="#8fa0c4">08.30 SUN</text>
+            <text x="98" y="216" text-anchor="middle" font-size="16" letter-spacing="6" fill="#e8efff">時計</text>
+            <text class="m" x="176" y="216" text-anchor="end" font-size="14" fill="#8fa0c4">›</text>
+            <circle cx="188" cy="12" r="13" fill="#6f8dff"/><text class="m" x="188" y="17" text-anchor="middle" font-size="13" font-weight="700" fill="#0a0f1e">3</text>
+          </g>
+          <g transform="translate(230,0)">
+            <rect width="196" height="250" rx="18" fill="#121a2e" stroke="rgba(150,178,255,.22)"/>
+            <text class="m" x="16" y="26" font-size="11" fill="#6f8dff">02</text>
+            <text class="m" x="180" y="26" text-anchor="end" font-size="8" letter-spacing="3" fill="#8fa0c4">TRANSLATE</text>
+            <rect x="16" y="40" width="164" height="136" rx="10" fill="#0a101f" stroke="rgba(150,178,255,.18)"/>
+            <g transform="translate(98,106)">
+              <rect x="-38" y="-34" width="42" height="42" rx="8" fill="none" stroke="#9db7ff" stroke-width="3"/>
+              <text x="-17" y="-4" text-anchor="middle" font-size="20" font-weight="700" fill="#9db7ff">あ</text>
+              <rect x="-6" y="-10" width="42" height="42" rx="8" fill="#0d1424" stroke="#9db7ff" stroke-width="3"/>
+              <text class="m" x="15" y="20" text-anchor="middle" font-size="20" font-weight="700" fill="#9db7ff">A</text>
+            </g>
+            <text x="98" y="216" text-anchor="middle" font-size="16" letter-spacing="6" fill="#e8efff">翻訳</text>
+            <text class="m" x="176" y="216" text-anchor="end" font-size="14" fill="#8fa0c4">›</text>
+            <circle cx="188" cy="12" r="13" fill="#6f8dff"/><text class="m" x="188" y="17" text-anchor="middle" font-size="13" font-weight="700" fill="#0a0f1e">4</text>
+          </g>
+          <g transform="translate(460,0)">
+            <rect width="196" height="250" rx="18" fill="#121a2e" stroke="rgba(150,178,255,.22)"/>
+            <text class="m" x="16" y="26" font-size="11" fill="#6f8dff">03</text>
+            <text class="m" x="180" y="26" text-anchor="end" font-size="8" letter-spacing="3" fill="#8fa0c4">MAP</text>
+            <rect x="16" y="40" width="164" height="136" rx="10" fill="#0a101f" stroke="rgba(150,178,255,.18)"/>
+            <g transform="translate(98,108)" stroke="#9db7ff" stroke-width="3" fill="none" stroke-linejoin="round">
+              <path d="M-30 -18 L-12 -26 L4 -18 L26 -26 V18 L4 26 L-12 18 L-30 26 Z"/>
+              <path d="M-12 -26 V18 M4 -18 V26"/>
+            </g>
+            <text x="98" y="216" text-anchor="middle" font-size="16" letter-spacing="6" fill="#e8efff">マップ</text>
+            <text class="m" x="176" y="216" text-anchor="end" font-size="14" fill="#8fa0c4">›</text>
+            <circle cx="188" cy="12" r="13" fill="#6f8dff"/><text class="m" x="188" y="17" text-anchor="middle" font-size="13" font-weight="700" fill="#0a0f1e">5</text>
+          </g>
+          <g transform="translate(690,0)">
+            <rect width="196" height="250" rx="18" fill="#121a2e" stroke="rgba(150,178,255,.22)"/>
+            <text class="m" x="16" y="26" font-size="11" fill="#6f8dff">04</text>
+            <text class="m" x="180" y="26" text-anchor="end" font-size="8" letter-spacing="3" fill="#8fa0c4">COMMAND</text>
+            <rect x="16" y="40" width="164" height="136" rx="10" fill="#0a101f" stroke="rgba(150,178,255,.18)"/>
+            <g transform="translate(98,108)" stroke="#9db7ff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="-34" y="-24" width="68" height="48" rx="7"/>
+              <path d="M-22 -8 L-14 -1 L-22 6"/>
+              <path d="M-6 8 H20"/>
+            </g>
+            <text x="98" y="216" text-anchor="middle" font-size="16" letter-spacing="6" fill="#e8efff">コマンド</text>
+            <text class="m" x="176" y="216" text-anchor="end" font-size="14" fill="#8fa0c4">›</text>
+            <circle cx="188" cy="12" r="13" fill="#6f8dff"/><text class="m" x="188" y="17" text-anchor="middle" font-size="13" font-weight="700" fill="#0a0f1e">6</text>
+          </g>
+        </g>
+
+        <text class="m" x="490" y="552" text-anchor="middle" font-size="9" letter-spacing="4" fill="rgba(143,160,196,.55)">SYSTEM READY</text>
+      </svg>
+      <ol class="legend">
+        <li><span class="tag">1</span><span><b>⟳ RESTART</b>　短押しで再起動（表示が乱れた時に）</span></li>
+        <li><span class="tag">2</span><span><b>⚙ 設定</b>　取扱説明書を見る</span></li>
+        <li><span class="tag">3</span><span><b>01 時計</b>　<span class="only-noclk">ロック中・いまは開けません（→02）</span><span class="only-clk">現在時刻を表示（→02）</span></span></li>
+        <li><span class="tag">4</span><span><b>02 翻訳</b>　ことばを英語に翻訳（→03）</span></li>
+        <li><span class="tag">5</span><span><b>03 マップ</b>　ブース見取り図（→04）</span></li>
+        <li class="only-open"><span class="tag">6</span><span><b>04 コマンド</b>　ワードを組み合わせて実行（→05）</span></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ================= 02 時計 ================= -->
+  <section class="sec" id="s02">
+    <div class="sec-head"><span class="sec-no">02</span><h2>時計</h2><span class="sec-en">CLOCK</span></div>
+
+    <div class="only-noclk">
+      <div class="fig">
+        <svg viewBox="0 0 980 240" role="img" aria-label="時計はロック中">
+          <g transform="translate(150,12)">
+            <rect width="168" height="214" rx="16" fill="#121a2e" stroke="rgba(150,178,255,.22)"/>
+            <text class="m" x="14" y="24" font-size="10" fill="#6f8dff">01</text>
+            <text class="m" x="154" y="24" text-anchor="end" font-size="7.5" letter-spacing="3" fill="#8fa0c4">CLOCK</text>
+            <rect x="14" y="36" width="140" height="112" rx="9" fill="#0a101f" stroke="rgba(150,178,255,.18)"/>
+            <g transform="translate(84,84)" stroke="#8fa0c4" stroke-width="3" fill="none">
+              <rect x="-15" y="-6" width="30" height="24" rx="5"/>
+              <path d="M-7 -6 v-6 a7 7 0 0 1 14 0 v6"/>
+              <circle cy="5" r="3" fill="#8fa0c4" stroke="none"/>
+            </g>
+            <text class="m" x="84" y="138" text-anchor="middle" font-size="7.5" letter-spacing="4" fill="#8fa0c4">LOCKED</text>
+            <text x="84" y="188" text-anchor="middle" font-size="14" letter-spacing="5" fill="#e8efff">時計</text>
+          </g>
+          <g transform="rotate(-4 610 77)">
+            <rect x="470" y="48" width="280" height="58" rx="8" fill="none" stroke="#f5b562" stroke-width="2.5"/>
+            <text class="m" x="610" y="86" text-anchor="middle" font-size="26" font-weight="700" letter-spacing="12" fill="#f5b562">LOCKED</text>
+          </g>
+          <text x="610" y="156" text-anchor="middle" font-size="13.5" fill="#e8efff">この機能は現在ロックされています</text>
+          <text x="610" y="180" text-anchor="middle" font-size="11" fill="#8fa0c4">公演の準備が進むと解禁されます</text>
+        </svg>
+      </div>
+    </div>
+
+    <div class="only-clk">
+      <div class="fig">
+        <svg viewBox="0 0 980 240" role="img" aria-label="時計の表示">
+          <g transform="translate(250,26)">
+            <rect width="480" height="150" rx="16" fill="#0a101f" stroke="rgba(150,178,255,.25)"/>
+            <text class="clk" x="240" y="98" text-anchor="middle" font-size="52" font-weight="700" letter-spacing="6" fill="#ff5252">12:00<tspan font-size="33" opacity="0.72">.00</tspan></text>
+            <text class="m" x="240" y="132" text-anchor="middle" font-size="11" letter-spacing="5" fill="#8fa0c4">08.30 SUN</text>
+          </g>
+          <text x="490" y="216" text-anchor="middle" font-size="12" fill="#8fa0c4">現在時刻（時：分：秒）と日付を表示します</text>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 03 翻訳 ================= -->
+  <section class="sec" id="s03">
+    <div class="sec-head"><span class="sec-no">03</span><h2>翻訳</h2><span class="sec-en">TRANSLATE　JP → EN</span></div>
+
+    <div class="fig">
+      <svg viewBox="0 0 980 226" role="img" aria-label="翻訳の流れ">
+        <g transform="translate(24,26)">
+          <rect x="0" y="0" width="296" height="16" rx="4" fill="#101a30" stroke="rgba(150,178,255,.15)"/>
+          <text class="m" x="148" y="12" text-anchor="middle" font-size="8" letter-spacing="6" fill="#8fa0c4">1 2 3 4 5 6 7 8 9 0</text>
+          <rect x="0" y="22" width="26" height="26" rx="5" fill="#141c33" stroke="rgba(150,178,255,.22)"/><text class="m" x="13" y="39" text-anchor="middle" font-size="11" fill="#cfe0ff">Q</text>
+          <rect x="30" y="22" width="26" height="26" rx="5" fill="#141c33" stroke="rgba(150,178,255,.22)"/><text class="m" x="43" y="39" text-anchor="middle" font-size="11" fill="#cfe0ff">W</text>
+          <rect x="60" y="22" width="26" height="26" rx="5" fill="#141c33" stroke="rgba(150,178,255,.22)"/><text class="m" x="73" y="39" text-anchor="middle" font-size="11" fill="#cfe0ff">E</text>
+          <rect x="90" y="22" width="26" height="26" rx="5" fill="rgba(111,141,255,.4)" stroke="#9db7ff" stroke-width="1.5"/><text class="m" x="103" y="39" text-anchor="middle" font-size="11" fill="#ffffff">R</text>
+          <rect x="120" y="22" width="26" height="26" rx="5" fill="#141c33" stroke="rgba(150,178,255,.22)"/><text class="m" x="133" y="39" text-anchor="middle" font-size="11" fill="#cfe0ff">T</text>
+          <rect x="150" y="22" width="26" height="26" rx="5" fill="#141c33" stroke="rgba(150,178,255,.22)"/><text class="m" x="163" y="39" text-anchor="middle" font-size="11" fill="#cfe0ff">Y</text>
+          <rect x="180" y="22" width="26" height="26" rx="5" fill="#141c33" stroke="rgba(150,178,255,.22)"/><text class="m" x="193" y="39" text-anchor="middle" font-size="11" fill="#cfe0ff">U</text>
+          <rect x="210" y="22" width="26" height="26" rx="5" fill="rgba(111,141,255,.4)" stroke="#9db7ff" stroke-width="1.5"/><text class="m" x="223" y="39" text-anchor="middle" font-size="11" fill="#ffffff">I</text>
+          <rect x="240" y="22" width="26" height="26" rx="5" fill="rgba(111,141,255,.4)" stroke="#9db7ff" stroke-width="1.5"/><text class="m" x="253" y="39" text-anchor="middle" font-size="11" fill="#ffffff">O</text>
+          <rect x="270" y="22" width="26" height="26" rx="5" fill="#141c33" stroke="rgba(150,178,255,.22)"/><text class="m" x="283" y="39" text-anchor="middle" font-size="11" fill="#cfe0ff">P</text>
+          <rect x="14" y="52" width="26" height="26" rx="5" fill="#141c33" stroke="rgba(150,178,255,.22)"/><text class="m" x="27" y="69" text-anchor="middle" font-size="11" fill="#cfe0ff">A</text>
+          <rect x="44" y="52" width="26" height="26" rx="5" fill="#141c33" stroke="rgba(150,178,255,.22)"/><text class="m" x="57" y="69" text-anchor="middle" font-size="11" fill="#cfe0ff">S</text>
+          <rect x="74" y="52" width="26" height="26" rx="5" fill="#141c33" stroke="rgba(150,178,255,.22)"/><text class="m" x="87" y="69" text-anchor="middle" font-size="11" fill="#cfe0ff">D</text>
+          <rect x="104" y="52" width="26" height="26" rx="5" fill="#141c33" stroke="rgba(150,178,255,.22)"/><text class="m" x="117" y="69" text-anchor="middle" font-size="11" fill="#cfe0ff">F</text>
+          <rect x="134" y="52" width="26" height="26" rx="5" fill="rgba(111,141,255,.4)" stroke="#9db7ff" stroke-width="1.5"/><text class="m" x="147" y="69" text-anchor="middle" font-size="11" fill="#ffffff">G</text>
+          <rect x="164" y="52" width="26" height="26" rx="5" fill="#141c33" stroke="rgba(150,178,255,.22)"/><text class="m" x="177" y="69" text-anchor="middle" font-size="11" fill="#cfe0ff">H</text>
+          <rect x="194" y="52" width="26" height="26" rx="5" fill="#141c33" stroke="rgba(150,178,255,.22)"/><text class="m" x="207" y="69" text-anchor="middle" font-size="11" fill="#cfe0ff">J</text>
+          <rect x="224" y="52" width="26" height="26" rx="5" fill="#141c33" stroke="rgba(150,178,255,.22)"/><text class="m" x="237" y="69" text-anchor="middle" font-size="11" fill="#cfe0ff">K</text>
+          <rect x="254" y="52" width="26" height="26" rx="5" fill="#141c33" stroke="rgba(150,178,255,.22)"/><text class="m" x="267" y="69" text-anchor="middle" font-size="11" fill="#cfe0ff">L</text>
+          <rect x="28" y="82" width="26" height="26" rx="5" fill="#141c33" stroke="rgba(150,178,255,.22)"/><text class="m" x="41" y="99" text-anchor="middle" font-size="11" fill="#cfe0ff">Z</text>
+          <rect x="58" y="82" width="26" height="26" rx="5" fill="#141c33" stroke="rgba(150,178,255,.22)"/><text class="m" x="71" y="99" text-anchor="middle" font-size="11" fill="#cfe0ff">X</text>
+          <rect x="88" y="82" width="26" height="26" rx="5" fill="#141c33" stroke="rgba(150,178,255,.22)"/><text class="m" x="101" y="99" text-anchor="middle" font-size="11" fill="#cfe0ff">C</text>
+          <rect x="118" y="82" width="26" height="26" rx="5" fill="#141c33" stroke="rgba(150,178,255,.22)"/><text class="m" x="131" y="99" text-anchor="middle" font-size="11" fill="#cfe0ff">V</text>
+          <rect x="148" y="82" width="26" height="26" rx="5" fill="#141c33" stroke="rgba(150,178,255,.22)"/><text class="m" x="161" y="99" text-anchor="middle" font-size="11" fill="#cfe0ff">B</text>
+          <rect x="178" y="82" width="26" height="26" rx="5" fill="rgba(111,141,255,.4)" stroke="#9db7ff" stroke-width="1.5"/><text class="m" x="191" y="99" text-anchor="middle" font-size="11" fill="#ffffff">N</text>
+          <rect x="208" y="82" width="26" height="26" rx="5" fill="#141c33" stroke="rgba(150,178,255,.22)"/><text class="m" x="221" y="99" text-anchor="middle" font-size="11" fill="#cfe0ff">M</text>
+          <rect x="240" y="82" width="56" height="26" rx="5" fill="#141c33" stroke="rgba(150,178,255,.22)"/><text class="m" x="268" y="99" text-anchor="middle" font-size="11" fill="#8fa0c4">⌫</text>
+          <rect x="0" y="112" width="58" height="26" rx="5" fill="#141c33" stroke="rgba(150,178,255,.22)"/><text x="29" y="129" text-anchor="middle" font-size="9.5" fill="#8fa0c4">クリア</text>
+          <rect x="64" y="112" width="148" height="26" rx="5" fill="#141c33" stroke="rgba(150,178,255,.22)"/><text x="138" y="129" text-anchor="middle" font-size="11" fill="#cfe0ff">ー</text>
+          <rect x="218" y="112" width="78" height="26" rx="5" fill="#6f8dff"/><text x="257" y="129" text-anchor="middle" font-size="10.5" font-weight="700" fill="#0a0f1e">翻 訳</text>
+          <circle cx="111" cy="27" r="6.5" fill="#f5b562"/><text class="m" x="111" y="30" text-anchor="middle" font-size="8" font-weight="700" fill="#0a0f1e">1</text>
+          <circle cx="231" cy="27" r="6.5" fill="#f5b562"/><text class="m" x="231" y="30" text-anchor="middle" font-size="8" font-weight="700" fill="#0a0f1e">2</text>
+          <circle cx="199" cy="87" r="6.5" fill="#f5b562"/><text class="m" x="199" y="90" text-anchor="middle" font-size="8" font-weight="700" fill="#0a0f1e">3</text>
+          <circle cx="155" cy="57" r="6.5" fill="#f5b562"/><text class="m" x="155" y="60" text-anchor="middle" font-size="8" font-weight="700" fill="#0a0f1e">4</text>
+          <circle cx="261" cy="27" r="6.5" fill="#f5b562"/><text class="m" x="261" y="30" text-anchor="middle" font-size="8" font-weight="700" fill="#0a0f1e">5</text>
+          <text x="148" y="162" text-anchor="middle" font-size="10" letter-spacing="2" fill="#8fa0c4">ローマ字タッチキーボード（①〜⑤の順で ringo）</text>
+        </g>
+        <line x1="330" y1="118" x2="368" y2="118" stroke="#6f8dff" stroke-width="2" marker-end="url(#ar)"/>
+        <g transform="translate(376,94)">
+          <rect width="186" height="48" rx="12" fill="#0b1120" stroke="rgba(150,178,255,.25)"/>
+          <text x="93" y="33" text-anchor="middle" font-size="21" letter-spacing="4" fill="#e8efff">りんご</text>
+          <text x="93" y="72" text-anchor="middle" font-size="9.5" fill="#8fa0c4"><tspan class="m">r i n g o</tspan> → りんご（自動かな変換）</text>
+        </g>
+        <line x1="570" y1="118" x2="600" y2="118" stroke="#6f8dff" stroke-width="2" marker-end="url(#ar)"/>
+        <g transform="translate(608,98)">
+          <rect width="84" height="40" rx="10" fill="#6f8dff"/>
+          <text x="42" y="26" text-anchor="middle" font-size="14" font-weight="700" letter-spacing="2" fill="#0a0f1e">翻訳</text>
+        </g>
+        <line x1="700" y1="108" x2="742" y2="74" stroke="#6f8dff" stroke-width="2" marker-end="url(#ar)"/>
+        <line x1="700" y1="128" x2="742" y2="164" stroke="#6f8dff" stroke-width="2" marker-end="url(#ar)"/>
+        <g transform="translate(750,28)">
+          <rect x="0" y="0" width="36" height="46" rx="8" fill="rgba(126,150,205,.08)" stroke="rgba(126,150,205,.3)"/><text class="m" x="18" y="32" text-anchor="middle" font-size="17" font-weight="700" fill="#5d6b8c">?</text>
+          <rect x="42" y="0" width="36" height="46" rx="8" fill="rgba(126,150,205,.08)" stroke="rgba(126,150,205,.3)"/><text class="m" x="60" y="32" text-anchor="middle" font-size="17" font-weight="700" fill="#5d6b8c">?</text>
+          <rect x="84" y="0" width="36" height="46" rx="8" fill="rgba(126,150,205,.08)" stroke="rgba(126,150,205,.3)"/><text class="m" x="102" y="32" text-anchor="middle" font-size="17" font-weight="700" fill="#5d6b8c">?</text>
+          <rect x="126" y="0" width="36" height="46" rx="8" fill="rgba(126,150,205,.08)" stroke="rgba(126,150,205,.3)"/><text class="m" x="144" y="32" text-anchor="middle" font-size="17" font-weight="700" fill="#5d6b8c">?</text>
+          <rect x="168" y="0" width="36" height="46" rx="8" fill="rgba(126,150,205,.08)" stroke="rgba(126,150,205,.3)"/><text class="m" x="186" y="32" text-anchor="middle" font-size="17" font-weight="700" fill="#5d6b8c">?</text>
+          <text x="102" y="68" text-anchor="middle" font-size="10" fill="#8fa0c4">解答に関係する語句 → 英単語が点灯</text>
+        </g>
+        <g transform="translate(750,144)">
+          <rect width="204" height="52" rx="10" fill="rgba(255,107,87,.06)" stroke="rgba(255,107,87,.4)"/>
+          <text class="m" x="102" y="34" text-anchor="middle" font-size="21" font-weight="700" letter-spacing="4" fill="#ff6b57">error</text>
+          <text x="102" y="72" text-anchor="middle" font-size="10" fill="#8fa0c4">関係ない語句 → error（例：りんご）</text>
+        </g>
+      </svg>
+    </div>
+  </section>
+
+  <!-- ================= 04 マップ ================= -->
+  <section class="sec" id="s04">
+    <div class="sec-head"><span class="sec-no">04</span><h2>マップ</h2><span class="sec-en">BOOTH PLAN</span></div>
+
+    <div class="fig">
+      <svg viewBox="0 0 980 356" role="img" aria-label="ブース見取り図">
+        <text class="m" x="40" y="48" font-size="9" letter-spacing="4" fill="#6f8dff">LEGEND</text>
+        <circle cx="48" cy="82" r="6" fill="#8fa8ff"/><text x="64" y="87" font-size="12.5" fill="#e8efff">カメラ <tspan class="m" fill="#8fa0c4">×2</tspan></text>
+        <circle cx="48" cy="114" r="6" fill="#f5b562"/><text x="64" y="119" font-size="12.5" fill="#e8efff">イラスト <tspan class="m" fill="#8fa0c4">×12</tspan></text>
+        <circle cx="48" cy="146" r="6" fill="#5d6b8c"/><text x="64" y="151" font-size="12.5" fill="#e8efff">備品 <tspan class="m" fill="#8fa0c4">×1</tspan></text>
+        <text x="40" y="196" font-size="10" fill="#8fa0c4">開くたびに 壁 → 配置物 の順で</text>
+        <text x="40" y="212" font-size="10" fill="#8fa0c4">描き込みアニメーション</text>
+        <text x="40" y="244" font-size="10" fill="#8fa0c4">図中の英字＝掲示イラストの語</text>
+        <text x="40" y="260" font-size="10" fill="#8fa0c4">（実物は「はくしゅ (clap)」等）</text>
+        <rect x="250" y="16" width="480" height="300" rx="8" fill="rgba(10,16,31,.55)" stroke="#9db7ff" stroke-width="3"/>
+        <line x1="448" y1="316" x2="532" y2="316" stroke="#0d1424" stroke-width="8"/>
+        <line x1="448" y1="316" x2="532" y2="316" stroke="#f5b562" stroke-width="2" stroke-dasharray="6 5"/>
+        <text x="490" y="340" text-anchor="middle" font-size="12" letter-spacing="4" fill="#8fa0c4">入口</text>
+        <g transform="translate(340,80)">
+          <circle r="26" fill="none" stroke="#8fa8ff" stroke-dasharray="3 4" opacity=".55"/>
+          <rect x="-18" y="-12" width="36" height="24" rx="5" fill="rgba(143,168,255,.15)" stroke="#8fa8ff" stroke-width="2"/>
+          <circle r="6" fill="none" stroke="#8fa8ff" stroke-width="2"/><circle r="2" fill="#8fa8ff"/>
+          <text y="44" text-anchor="middle" font-size="9.5" fill="#e8efff">カメラ①</text>
+        </g>
+        <g transform="translate(640,80)">
+          <circle r="26" fill="none" stroke="#8fa8ff" stroke-dasharray="3 4" opacity=".55"/>
+          <rect x="-18" y="-12" width="36" height="24" rx="5" fill="rgba(143,168,255,.15)" stroke="#8fa8ff" stroke-width="2"/>
+          <circle r="6" fill="none" stroke="#8fa8ff" stroke-width="2"/><circle r="2" fill="#8fa8ff"/>
+          <text y="44" text-anchor="middle" font-size="9.5" fill="#e8efff">カメラ②</text>
+        </g>
+        <g fill="#f5b562">
+          <circle cx="334" cy="134" r="5.5"/><circle cx="433" cy="104" r="5.5"/><circle cx="532" cy="86" r="5.5"/>
+          <circle cx="316" cy="221" r="5.5"/><circle cx="409" cy="191" r="5.5"/><circle cx="505" cy="212" r="5.5"/>
+          <circle cx="589" cy="167" r="5.5"/><circle cx="364" cy="265" r="5.5"/><circle cx="460" cy="261" r="5.5"/>
+          <circle cx="562" cy="266" r="5.5"/><circle cx="664" cy="218" r="5.5"/><circle cx="643" cy="286" r="5.5"/>
+        </g>
+        <g font-size="9" fill="#e8efff" text-anchor="middle">
+          <text class="m" x="334" y="150">bear</text><text class="m" x="433" y="120">clap</text><text class="m" x="532" y="102">eco</text>
+          <text class="m" x="316" y="237">top</text><text class="m" x="409" y="207">stop</text><text class="m" x="505" y="228">net</text>
+          <text class="m" x="589" y="183">hunt</text><text class="m" x="364" y="281">pen</text><text class="m" x="460" y="277">fact</text>
+          <text class="m" x="562" y="282">lion</text><text class="m" x="664" y="234">stick</text><text class="m" x="643" y="302">train</text>
+        </g>
+        <rect x="665" y="112" width="30" height="20" rx="4" fill="none" stroke="#5d6b8c" stroke-width="2" stroke-dasharray="5 4"/>
+        <text x="680" y="148" text-anchor="middle" font-size="8.5" fill="#8fa0c4">ボックス</text>
+      </svg>
+    </div>
+  </section>
+
+  <!-- ================= 05 コマンド（解禁前は秘匿） ================= -->
+  <section class="sec" id="s05">
+    <div class="only-locked">
+      <div class="sec-head"><span class="sec-no">05</span><h2><span class="bar" style="width:170px"></span></h2><span class="sec-en">LOCKED</span></div>
+      <div class="fig redfig">
+        <div class="stamp">LOCKED</div>
+        <div class="redline" style="width:92%"></div>
+        <div class="redline" style="width:63%"></div>
+        <div class="redline" style="width:80%"></div>
+        <div class="redline" style="width:46%; margin-left:26px"></div>
+        <div class="redline" style="width:86%"></div>
+        <div class="redline" style="width:58%; margin-left:26px"></div>
+        <div class="redline" style="width:72%"></div>
+        <div class="redline" style="width:31%"></div>
+        <div class="redcap">この項目は現在閲覧できません ─ SECURITY LOCK</div>
+      </div>
+    </div>
+    <div class="only-open">
+      <div class="sec-head"><span class="sec-no">05</span><h2>コマンド</h2><span class="sec-en">QUICK COMMAND</span></div>
+      <div class="fig">
+        <ol class="legend" style="grid-template-columns:1fr;">
+          <li><span class="tag">1</span><span><b>カメラ１・カメラ２</b>のわくに、リストからワードを入れる（カメラ２は空でもよい）</span></li>
+          <li><span class="tag">2</span><span><span class="kbd">実行</span> を押す ─ ワードは<b>頭文字が消えて合体</b>し、1つの「コマンド」になる</span></li>
+          <li><span class="tag">3</span><span>コマンドに応じて<b>看板の文字が点灯⇄消灯</b>したり、端末に変化が起きる（効果は「コマンドの効果：」に表示）</span></li>
+          <li><span class="tag">4</span><span>存在しないコマンドは<b>無反応</b>。同じコマンドは<b>何度でも</b>実行でき、押すたびに点灯⇄消灯が入れかわる</span></li>
+          <li><span class="tag">5</span><span><span class="kbd">リセット</span> ＝ 看板の点灯と、これまでのコマンドの効果を<b>すべて元に戻す</b></span></li>
+          <li><span class="tag">6</span><span>目標は看板の<b>6つの枠をすべて点灯</b>させること</span></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 06 早見表 ================= -->
+  <section class="sec" id="s06">
+    <div class="sec-head"><span class="sec-no">06</span><h2>操作早見表・困ったとき</h2><span class="sec-en">QUICK REFERENCE</span></div>
+    <div class="fig">
+      <table>
+        <thead><tr><th>操作</th><th>動作</th></tr></thead>
+        <tbody>
+          <tr><td><span class="kbd">タップ</span>（待機画面）</td><td>起動モーション開始</td></tr>
+          <tr><td><span class="kbd">タップ</span>（起動中）</td><td>スキップしてホームへ</td></tr>
+          <tr><td><span class="kbd">⟳ RESTART</span> 短押し</td><td>再起動モーション → ホーム</td></tr>
+          <tr><td><span class="kbd">⚙ 設定</span></td><td>取扱説明書を見る</td></tr>
+          <tr><td>画面のどこかをタッチ</td><td>全画面に自動復帰</td></tr>
+          <tr><td>ロック中のカードをタップ</td><td>開かず、少し揺れる</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="backfoot"><a class="backlink" href="tanmatsu.html">← 端末へ戻る</a></div>
+  <footer>PARALLELS-OS OPERATION MANUAL ─ ver 0.9.2</footer>
+</div>
+<script>
+  // 端末との連動：cmd=1 → 05章解禁 / clk=1 → 02章（時計）解禁
+  const q = new URLSearchParams(location.search);
+  if (q.get("cmd") === "1") document.documentElement.classList.add("cmd-open");
+  if (q.get("clk") === "1") document.documentElement.classList.add("clk-open");
+  // 端末内ビューア（iframe）表示中は「端末へ戻る」リンクを隠す
+  if (window.self !== window.top) document.documentElement.classList.add("embedded");
+</script>
+</body>
+</html>
