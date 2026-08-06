@@ -1,0 +1,2875 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>端末</title>
+<style>
+  /* 時計用フォント：にゃしぃフォント改二
+     フォントファイルを「nyashi-kai2.ttf」という名前にして、この
+     HTMLと同じフォルダに置くと適用されます（GitHub Pagesなら同じ
+     リポジトリに一緒にアップロード）。未配置でも Segoe UI で動きます */
+  @font-face{
+    font-family:"NyashiKai2";
+    src:url("nyashi-kai2.ttf") format("truetype");
+    font-display:swap;
+  }
+  /* ============================================================
+     「公演開始まであと30分」用 端末ソフト  ―  PARALLELS-OS
+     - 待機画面（電源ボタン）→ クリックで起動モーション → ホーム
+     - 左上の「⟳ RESTART」ボタン：クリックで起動モーションを再生してホームへ
+                                  約2秒 長押しで運営用パネル
+     - 時計は作中時刻 19:30 スタート（作中公演は 19:30〜20:00）
+       Ctrl + Shift 同時押しでいつでも 19:30 にリセット
+     - 日付は 8/30 固定（JSの CLOCK_DATE_TEXT で変更可）
+     - 時計の数字は通常書体の赤。「0」だけ丸＋斜線（🚫型）… STEP裏の仕掛け
+     - 配色は常に白背景。例外は evening コマンドの夜間モードのみ
+     - 簡易コマンド（STEP3〜）：ホームのワードマークを 2.5秒以内に5連続タップ、
+       または運営パネルの「コマンド解禁」でカード04が出現（長押しでは反応しない）
+       スロットは「カメラ１」「カメラ２」。頭文字を消して合体した語がコマンド
+       同じコマンドは何度でも実行可（unlockの文字は押すたび点灯⇄消灯）
+       「リセット」＝看板の点灯とコマンドの効果をすべて元に戻す
+       効果は「コマンドの効果：」を付けて左に表示
+       ダミー：hiphop(ship+shop)=hiphop.aac をループ再生（リセットで停止）/
+               hear(she+car)=以降のタップに効果音 /
+               evening(seven+ring)=夜間モード（画面が黒くなる）
+       ※laptop・ticket は中身のないコマンド（看板の l,o / c,k 点灯用）
+     - 時計カード(01)は初期ロック状態。「看板の6文字が全点灯」した時に出現し、
+       CLOCK ON表示＋カードのNEWバッジと明滅で確認を促す（時計を開くと消える）
+       時計は 時:分:秒（秒は小さめ）。リロード復旧は運営パネルの「時計ロック解除」
+     - 右上の「⚙ 設定」：取扱説明書
+     - 取扱説明書（manual.html を同フォルダに配置）：設定から端末内ビューアで表示
+       コマンド解禁後は cmd=1、時計解禁後は clk=1 が付き、該当章が解禁版に変わる
+     - 起動モーションは再生中のタップでスキップ可
+     ============================================================ */
+  :root{
+    --void:#070b13;                       /* 最背面 */
+    --deep:#0b1120;                       /* 画面の地 */
+    --glass:rgba(17,24,39,.62);           /* ガラスパネル */
+    --line:rgba(150,178,255,.16);         /* 罫線 */
+    --ice:#e8efff;                        /* 主文字色 */
+    --sub:#8fa0c4;                        /* 補助文字色 */
+    --pulse:#6f8dff;                      /* アクセント（電光藍） */
+    --pulse-soft:rgba(111,141,255,.22);
+    --alert:#ff6b57;                      /* error */
+    --clock-ink:#ff5252;                  /* 時計の数字色（配色モードで変化） */
+    --clock-glow:rgba(255,82,82,.35);     /* 時計の発光色 */
+    --lcd-lit:#dfe9ff;
+    --lcd-dim:rgba(126,150,205,.13);
+    --radius:20px;
+    --mono:"Cascadia Mono","Consolas","Courier New",monospace;
+    font-size:16px;
+  }
+  /* ---------- 配色モード（右上の ◐ COLOR で切替 / アクセシビリティ配慮） ----------
+     明暗を反転した表示（白背景×黒文字系）。色相も回して発光色の判別性を保つ */
+  /* 明るさは最後に掛ける（設定のスライダーが --ui-bright を書き換える） */
+  body{filter:brightness(var(--ui-bright,1));}
+  body.theme-invert{filter:invert(1) hue-rotate(180deg) brightness(var(--ui-bright,1));}
+  [hidden]{display:none !important;}
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%; overscroll-behavior:none;}   /* 端からの引っ張り操作を抑止 */
+  body{
+    margin:0;
+    background:var(--void);
+    color:var(--ice);
+    font-family:"Yu Gothic UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;
+    user-select:none;
+    overflow:hidden;
+    touch-action:manipulation;   /* ダブルタップ拡大等のジェスチャーを無効化 */
+  }
+
+  /* ---------- 端末筐体 ---------- */
+  #device{
+    position:relative;
+    width:100%; height:100vh; margin:0 auto; max-width:1500px;
+    background:
+      radial-gradient(1200px 700px at 70% -10%, rgba(111,141,255,.10), transparent 60%),
+      radial-gradient(900px 600px at 10% 110%, rgba(111,141,255,.07), transparent 60%),
+      var(--deep);
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  /* 極細グリッド＋走査線（ごく薄く） */
+  #device::before{
+    content:""; position:absolute; inset:0; pointer-events:none; z-index:0;
+    background:
+      repeating-linear-gradient(0deg, rgba(150,178,255,.045) 0 1px, transparent 1px 56px),
+      repeating-linear-gradient(90deg, rgba(150,178,255,.045) 0 1px, transparent 1px 56px);
+    mask-image:radial-gradient(120% 90% at 50% 40%, #000 40%, transparent 100%);
+  }
+  #device::after{
+    content:""; position:absolute; inset:0; pointer-events:none; z-index:40;
+    background:repeating-linear-gradient(0deg, rgba(255,255,255,.022) 0 1px, transparent 1px 3px);
+    mix-blend-mode:overlay;
+  }
+
+  /* ---------- ステータスバー ---------- */
+  #statusbar{
+    position:relative; z-index:5; flex:0 0 auto;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 22px 10px;
+    font-family:var(--mono); font-size:.78rem; letter-spacing:.22em;
+    color:var(--sub);
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg, rgba(11,17,32,.9), rgba(11,17,32,.35));
+    backdrop-filter:blur(6px);
+  }
+  #logo{
+    font-family:var(--mono); font-size:.72rem; font-weight:700;
+    letter-spacing:.24em; text-indent:.06em;
+    color:var(--sub); background:transparent;
+    border:1px solid var(--line); border-radius:9px;
+    padding:5px 14px; cursor:pointer;
+    transition:border-color .2s, color .2s, box-shadow .2s, transform .08s;
+  }
+  #logo:hover{
+    border-color:rgba(111,141,255,.55); color:var(--ice);
+    box-shadow:0 0 14px rgba(111,141,255,.18);
+  }
+  #logo:active{transform:scale(.95);}
+  #statusbar .right{display:flex; align-items:center; gap:18px;}
+  #settings-btn{
+    font-family:var(--mono); font-size:.7rem; font-weight:700;
+    letter-spacing:.2em; color:var(--sub); background:transparent;
+    border:1px solid var(--line); border-radius:9px;
+    padding:5px 12px; cursor:pointer;
+    transition:border-color .2s, color .2s, box-shadow .2s, transform .08s;
+  }
+  #settings-btn:hover{border-color:rgba(111,141,255,.55); color:var(--ice); box-shadow:0 0 14px rgba(111,141,255,.18);}
+  #settings-btn:active{transform:scale(.95);}
+  #settings-btn:focus-visible{outline:2px solid var(--pulse); outline-offset:2px;}
+
+  /* ---------- 画面共通 ---------- */
+  #screens{position:relative; z-index:2; flex:1 1 auto; min-height:0;}
+  .screen{
+    position:absolute; inset:0;
+    display:none; flex-direction:column; overflow:auto;
+  }
+  .screen.active{display:flex;}
+  /* アプリ起動：タップ位置から円形に展開（JSで clip-path を制御） */
+
+  /* 入場スタッガー */
+  @keyframes riseIn{
+    from{opacity:0; transform:translateY(18px);}
+    to{opacity:1; transform:none;}
+  }
+  .screen.entering .stagger > *{opacity:0; animation:riseIn .55s cubic-bezier(.2,.8,.25,1) both;}
+  .screen.entering .stagger > *:nth-child(1){animation-delay:.10s;}
+  .screen.entering .stagger > *:nth-child(2){animation-delay:.20s;}
+  .screen.entering .stagger > *:nth-child(3){animation-delay:.30s;}
+  .screen.entering .stagger > *:nth-child(4){animation-delay:.40s;}
+  .screen.entering .stagger > *:nth-child(5){animation-delay:.50s;}
+  .screen.leaving{transition:opacity .16s ease, transform .16s ease; opacity:0; transform:scale(.985);}
+
+  /* ---------- ホーム ----------
+     大きなロゴ（PARALLELS-OS）を主役に据え、その下に
+     「時計・翻訳・マップ」の3枚を同一フォーマットの機能カードとして横並びに。
+     各カード＝ [番号+英名] / [インセットのスクリーン枠] / [和名+›]  */
+  #home{align-items:center; justify-content:flex-start;}
+  #home .stagger{
+    display:flex; flex-direction:column; align-items:center; gap:0;
+    margin:auto; padding:24px 16px;   /* はみ出す場合も上（ロゴ）が切れない */
+  }
+  #home-logo{
+    font-family:var(--mono); font-weight:700;
+    font-size:clamp(2.3rem, 5.6vw, 3.7rem);
+    letter-spacing:.38em; text-indent:.38em;
+    color:var(--ice); white-space:nowrap;
+  }
+  #home-logo em{font-style:normal; color:var(--pulse); text-shadow:0 0 28px var(--pulse-soft);}
+  #home-sub{
+    display:flex; align-items:center; gap:16px;
+    font-family:var(--mono); font-size:.68rem; letter-spacing:.5em; text-indent:.5em;
+    color:rgba(143,160,196,.6);
+    margin:16px 0 54px;
+  }
+  #home-sub::before, #home-sub::after{
+    content:""; width:64px; height:1px;
+    background:linear-gradient(90deg, transparent, rgba(150,178,255,.35));
+  }
+  #home-sub::after{transform:scaleX(-1);}
+
+  #home .apps{display:flex; gap:clamp(14px, 2vw, 28px); flex-wrap:wrap; justify-content:center;}
+  .fn-card{
+    position:relative; width:clamp(174px, 20.5vw, 252px);
+    display:flex; flex-direction:column; gap:12px;
+    padding:16px 18px 14px;
+    background:linear-gradient(160deg, rgba(30,41,66,.85), rgba(13,19,35,.9));
+    border:1px solid var(--line); border-radius:24px;
+    box-shadow:0 18px 40px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);
+    cursor:pointer; color:var(--ice);
+    transition:transform .22s cubic-bezier(.2,.8,.25,1), box-shadow .22s, border-color .22s;
+  }
+  .fn-card::after{
+    content:""; position:absolute; inset:0; border-radius:inherit;
+    background:linear-gradient(165deg, rgba(255,255,255,.07) 0%, transparent 40%);
+    pointer-events:none;
+  }
+  .fn-card:hover, .fn-card:focus-visible{
+    transform:translateY(-6px);
+    border-color:rgba(111,141,255,.55);
+    box-shadow:0 26px 50px rgba(0,0,0,.5), 0 0 0 1px rgba(111,141,255,.25), 0 0 34px rgba(111,141,255,.18);
+  }
+  .fn-card:active{transform:translateY(-2px) scale(.97);}
+  /* 点灯状態：タップしたカードに付き、別のカードを開くまで残り続ける
+     （最後に開いた機能のインジケーター。色は全カード共通の青） */
+  .fn-card.lit{
+    border-color:rgba(111,141,255,.6);
+    box-shadow:0 18px 40px rgba(0,0,0,.45),
+               0 0 0 1px rgba(111,141,255,.3),
+               0 0 38px rgba(111,141,255,.25),
+               inset 0 1px 0 rgba(255,255,255,.06);
+  }
+  .fc-top{display:flex; align-items:baseline; justify-content:space-between; font-family:var(--mono);}
+  .fc-idx{font-size:.82rem; letter-spacing:.18em; color:var(--pulse);}
+  .fc-en{font-size:.6rem; letter-spacing:.34em; color:rgba(143,160,196,.6);}
+  .fc-screen{
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:7px;
+    height:132px;
+    background:linear-gradient(180deg, #0a101f, #060a14);
+    border:1px solid var(--line); border-radius:14px;
+    box-shadow:inset 0 0 26px rgba(0,0,0,.65);
+  }
+  .fc-screen .fc-icon{width:62px; height:62px; filter:drop-shadow(0 0 12px rgba(111,141,255,.45));}
+  #home-clock-svg{
+    display:block; width:min(186px, 92%); height:auto;
+    filter:drop-shadow(0 0 8px var(--clock-glow));
+  }
+  #home-clock-date{
+    font-family:var(--mono); font-size:.6rem; letter-spacing:.32em; text-indent:.32em;
+    color:var(--sub);
+  }
+  .fc-bottom{display:flex; align-items:center; justify-content:space-between;}
+  .fc-name{font-size:1.05rem; font-weight:600; letter-spacing:.3em; text-indent:.3em;}
+  .fc-go{
+    font-family:var(--mono); font-size:1.05rem; color:var(--sub);
+    animation:hcpulse 2.6s ease-in-out infinite;
+  }
+  @keyframes hcpulse{0%,100%{opacity:.35;} 50%{opacity:1;}}
+  .fn-card:focus-visible{outline:none;}
+
+  #ticker{
+    margin-top:56px; font-family:var(--mono); font-size:.68rem;
+    letter-spacing:.3em; color:rgba(143,160,196,.6); height:1em;
+  }
+  #ticker span{display:inline-block; animation:tickfade 4s ease infinite;}
+  @keyframes tickfade{0%,12%{opacity:0} 22%,80%{opacity:1} 95%,100%{opacity:0}}
+
+  /* ---------- アプリ共通ヘッダ ---------- */
+  .app-header{
+    flex:0 0 auto; display:flex; align-items:center; gap:16px;
+    padding:12px 24px;
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg, rgba(13,19,35,.7), transparent);
+  }
+  .back-btn{
+    font-family:var(--mono); letter-spacing:.14em;
+    border:1px solid var(--line); background:rgba(17,24,39,.5); color:var(--ice);
+    border-radius:12px; padding:9px 18px; font-size:.9rem; cursor:pointer;
+    transition:border-color .2s, background .2s;
+  }
+  .back-btn:hover{border-color:var(--pulse); background:rgba(111,141,255,.12);}
+  .back-btn:focus-visible{outline:2px solid var(--pulse); outline-offset:2px;}
+  .app-header h2{
+    margin:0; font-size:1.02rem; font-weight:700;
+    letter-spacing:.42em; text-indent:.42em;
+  }
+  .app-header .app-tag{
+    margin-left:auto; font-family:var(--mono); font-size:.66rem;
+    letter-spacing:.3em; color:var(--sub);
+  }
+  .app-body{
+    flex:1 1 auto; display:flex; flex-direction:column;
+    align-items:center; padding:22px 24px 16px; gap:16px;
+  }
+
+  /* ---------- 翻訳 ---------- */
+  #tr-form{width:min(780px,100%); display:flex; flex-direction:column; gap:10px;}
+  #tr-label{
+    font-family:var(--mono); font-size:.72rem; letter-spacing:.28em; color:var(--sub);
+  }
+  #tr-row{display:flex; gap:12px;}
+  #tr-input{
+    flex:1; font-size:1.4rem; padding:12px 20px;
+    border:1px solid var(--line); border-radius:var(--radius);
+    background:rgba(10,15,28,.8); color:var(--ice);
+    user-select:text; font-family:inherit;
+    transition:border-color .2s, box-shadow .2s;
+  }
+  #tr-input::placeholder{color:rgba(143,160,196,.4);}
+  #tr-input:focus{outline:none; border-color:var(--pulse); box-shadow:0 0 0 3px var(--pulse-soft);}
+  #tr-go{
+    font-size:1rem; font-weight:700; letter-spacing:.3em; text-indent:.3em;
+    padding:0 30px; border:none; border-radius:var(--radius);
+    background:linear-gradient(180deg, #7f9bff, #5872e6);
+    color:#0a0f1e; cursor:pointer;
+    box-shadow:0 10px 26px rgba(111,141,255,.35);
+    transition:transform .15s, filter .15s;
+  }
+  #tr-go:hover{filter:brightness(1.08);}
+  #tr-go:active{transform:scale(.97);}
+  #tr-go:disabled{opacity:.5; cursor:default;}
+  #tr-result{
+    position:relative; width:min(780px,100%); min-height:96px; flex:1 1 auto;
+    background:linear-gradient(180deg, #0a101f, #070b16);
+    border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:inset 0 0 46px rgba(0,0,0,.6);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:16px; padding:26px; overflow:hidden;
+  }
+  #tr-result .cap{
+    position:absolute; top:12px; left:18px;
+    font-family:var(--mono); color:rgba(143,160,196,.5);
+    font-size:.64rem; letter-spacing:.4em;
+  }
+  /* 走査バー（翻訳中） */
+  #tr-scan{
+    position:absolute; inset:0; display:none; pointer-events:none;
+    background:linear-gradient(90deg, transparent, rgba(111,141,255,.16), transparent);
+    width:45%;
+  }
+  #tr-result.scanning #tr-scan{display:block; animation:scan 0.55s linear infinite;}
+  @keyframes scan{from{transform:translateX(-100%)} to{transform:translateX(320%)}}
+  #tr-tiles{display:flex; gap:10px; flex-wrap:wrap; justify-content:center;}
+  .tr-tile{
+    width:54px; height:68px; border-radius:10px;
+    background:rgba(126,150,205,.08);
+    border:1px solid rgba(126,150,205,.22);
+    color:var(--lcd-lit);
+    display:flex; align-items:center; justify-content:center;
+    font-size:2.1rem; font-weight:700; font-family:var(--mono);
+    text-transform:lowercase;
+    text-shadow:0 0 14px rgba(159,183,255,.7);
+    opacity:0; transform:translateY(10px) scale(.9);
+    animation:tileIn .3s cubic-bezier(.2,.8,.3,1.2) forwards;
+  }
+  @keyframes tileIn{to{opacity:1; transform:none;}}
+  #tr-error{
+    display:none; color:var(--alert);
+    font-family:var(--mono); font-size:2.5rem; font-weight:700; letter-spacing:.22em;
+    text-shadow:0 0 18px rgba(255,107,87,.55);
+  }
+  #tr-result.err #tr-error{display:block; animation:glitch .34s steps(2) 2;}
+  @keyframes glitch{
+    0%{transform:translateX(0)} 25%{transform:translateX(-5px)}
+    50%{transform:translateX(4px)} 75%{transform:translateX(-2px)} 100%{transform:none}
+  }
+  #tr-hint{
+    font-family:var(--mono); color:rgba(143,160,196,.55);
+    font-size:.9rem; letter-spacing:.28em;
+  }
+  #tr-hint::after{content:"▮"; margin-left:8px; animation:cursorblink 1.1s steps(1) infinite;}
+  @keyframes cursorblink{50%{opacity:0}}
+
+  /* ---------- タッチキーボード（翻訳用・ローマ字入力） ----------
+     QWERTY 3段＋数字段＋機能段。キーは押し込み式の立体キーキャップ */
+  #kbd{width:min(720px,100%); display:flex; flex-direction:column; gap:6px; flex:0 0 auto;}
+  .kbd-row{display:flex; gap:6px; justify-content:center;}
+  .kbd-row.indent1{padding:0 4.5%;}
+  .kbd-row.indent2{padding:0 2%;}
+  .kbd-key{
+    flex:1; min-width:0; height:46px;
+    font-family:var(--mono); font-size:1.12rem; text-transform:uppercase;
+    color:var(--ice); text-shadow:0 0 10px rgba(159,183,255,.25);
+    background:linear-gradient(180deg, #202b48, #141c33);
+    border:1px solid rgba(150,178,255,.20); border-bottom-color:rgba(150,178,255,.08);
+    border-radius:10px;
+    box-shadow:0 3px 0 #070b16, 0 5px 12px rgba(0,0,0,.38), inset 0 1px 0 rgba(255,255,255,.08);
+    cursor:pointer; display:flex; align-items:center; justify-content:center;
+    transition:transform .05s, box-shadow .05s, background .15s, border-color .15s, color .15s;
+    touch-action:manipulation; -webkit-user-select:none; user-select:none;
+  }
+  .kbd-key:hover{border-color:rgba(111,141,255,.6); color:#fff;}
+  .kbd-key:active{
+    transform:translateY(3px);
+    background:linear-gradient(180deg, #2a3963, #1b2645);
+    box-shadow:0 0 0 #070b16, 0 1px 4px rgba(0,0,0,.4),
+               inset 0 1px 0 rgba(255,255,255,.06), 0 0 18px rgba(111,141,255,.4);
+  }
+  #kbd-num .kbd-key{
+    height:32px; font-size:.84rem; color:var(--sub); border-radius:8px;
+    box-shadow:0 2px 0 #070b16, 0 3px 8px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.06);
+  }
+  #kbd-num .kbd-key:active{transform:translateY(2px); box-shadow:0 0 0 #070b16, 0 0 14px rgba(111,141,255,.35);}
+  .kbd-key.bs{flex:1.6; font-size:1.1rem; color:var(--sub);}
+  .kbd-key.fn{flex:1.5; font-family:inherit; font-size:.9rem; text-transform:none; color:var(--sub);}
+  .kbd-key.dash{flex:3.6;}   /* 「ー」をスペースキー位置に */
+  .kbd-key.go{
+    flex:2; font-family:inherit; font-size:1rem; text-transform:none;
+    background:linear-gradient(180deg, #7f9bff, #5872e6);
+    color:#0a0f1e; font-weight:700; letter-spacing:.25em; text-indent:.25em;
+    border:none; text-shadow:none;
+    box-shadow:0 3px 0 #2c3d86, 0 6px 16px rgba(111,141,255,.4);
+  }
+  .kbd-key.go:hover{filter:brightness(1.08);}
+  .kbd-key.go:active{transform:translateY(3px); box-shadow:0 0 0 #2c3d86, 0 0 20px rgba(111,141,255,.5);}
+
+  /* ---------- 時計 ---------- */
+  #app-clock .app-body{justify-content:center;}
+  #clock-face{
+    position:relative;
+    background:linear-gradient(180deg, #0a101f, #060a14);
+    border:1px solid var(--line);
+    border-radius:28px;
+    padding:52px 58px 44px;
+    box-shadow:inset 0 0 60px rgba(0,0,0,.65), 0 30px 70px rgba(0,0,0,.5);
+  }
+  #clock-face::before{           /* 面のうっすらした発光 */
+    content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+    background:radial-gradient(60% 90% at 50% 30%, rgba(255,82,82,.08), transparent 70%);
+  }
+  #clock-svg{display:block; width:min(680px,84vw); height:auto; filter:drop-shadow(0 0 16px var(--clock-glow));}
+  #clock-face.warm #clock-svg{animation:warmflicker .45s steps(3) 1;}
+  @keyframes warmflicker{
+    0%{opacity:.2} 40%{opacity:.9} 60%{opacity:.4} 100%{opacity:1}
+  }
+  #clock-date{
+    font-family:var(--mono); color:var(--sub);
+    letter-spacing:.3em; font-size:1.05rem;
+  }
+
+  /* ---------- マップ ---------- */
+  #app-map .app-body{padding:12px 18px 10px; gap:10px; overflow:hidden;}
+  #map-wrap{
+    max-width:100%;
+    display:flex; flex-direction:column; align-items:center;
+  }
+  #map-svg{
+    display:block;
+    height:min(78vh, 680px);      /* 画面の高さ基準で収める */
+    aspect-ratio:800/520; width:auto; max-width:100%;
+    background:
+      radial-gradient(700px 400px at 50% 0%, rgba(111,141,255,.06), transparent 70%),
+      #0a101f;
+    border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:inset 0 0 50px rgba(0,0,0,.55);
+  }
+  /* 描画アニメーション（開くたびにJSでクラスを付け直す） */
+  #map-svg.draw .wall{stroke-dasharray:100; stroke-dashoffset:100; animation:drawline 1s .1s ease forwards;}
+  @keyframes drawline{to{stroke-dashoffset:0;}}
+  #map-svg.draw .pop{opacity:0; transform-origin:center; transform-box:fill-box;
+    animation:mapop .45s cubic-bezier(.2,.8,.3,1.25) forwards;}
+  @keyframes mapop{from{opacity:0; transform:scale(.6);} to{opacity:1; transform:scale(1);}}
+
+  /* ---------- 簡易コマンド ---------- */
+  #app-command .app-body{padding:12px 20px 10px; gap:9px; overflow:hidden;}
+  #sign{
+    width:min(520px,100%);
+    display:flex; flex-direction:column; align-items:center; gap:2px;
+    padding:8px 18px 6px;
+    background:linear-gradient(180deg, #0a101f, #060a14);
+    border:1px solid var(--line); border-radius:16px;
+    box-shadow:inset 0 0 30px rgba(0,0,0,.65);
+    transition:border-color .4s, box-shadow .4s;
+  }
+  #sign .cap{font-family:var(--mono); font-size:.58rem; letter-spacing:.42em; color:rgba(143,160,196,.5);}
+  #sign-letters{display:flex; gap:15px;}
+  .sg{
+    font-family:var(--mono); font-weight:700; font-size:2.05rem;
+    color:transparent;                                   /* 未点灯の文字は完全に隠す（答えバレ防止） */
+    border-bottom:3px solid rgba(150,178,255,.16);       /* 6つの空き枠だけ見せる */
+    padding:0 3px;
+    transition:color .3s, text-shadow .3s, border-color .3s;
+  }
+  .sg.on{
+    color:#d5e3ff;
+    text-shadow:0 0 16px rgba(150,180,255,.85), 0 0 42px rgba(111,141,255,.55);
+    border-bottom-color:rgba(150,180,255,.7);
+  }
+  /* 偶数回トグルで状態が変わらない文字の点滅（消灯中→一瞬光る／点灯中→一瞬消える） */
+  .sg.blink{animation:sgblinkon .5s ease;}
+  @keyframes sgblinkon{
+    0%,100%{color:transparent; text-shadow:none; border-bottom-color:rgba(150,178,255,.16);}
+    38%,62%{color:#d5e3ff; text-shadow:0 0 16px rgba(150,180,255,.85), 0 0 42px rgba(111,141,255,.55); border-bottom-color:rgba(150,180,255,.7);}
+  }
+  .sg.on.blink{animation:sgblinkoff .5s ease;}
+  @keyframes sgblinkoff{
+    0%,100%{color:#d5e3ff; text-shadow:0 0 16px rgba(150,180,255,.85), 0 0 42px rgba(111,141,255,.55); border-bottom-color:rgba(150,180,255,.7);}
+    38%,62%{color:transparent; text-shadow:none; border-bottom-color:rgba(150,178,255,.16);}
+  }
+  #sign.complete{
+    border-color:rgba(140,170,255,.6);
+    box-shadow:inset 0 0 30px rgba(0,0,0,.65), 0 0 34px rgba(111,141,255,.35);
+    animation:signdone 1s ease 2;
+  }
+  @keyframes signdone{50%{transform:scale(1.02);}}
+
+  #cmd-slots{display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:center;}
+  .cmd-slot{
+    min-width:140px; padding:7px 14px; text-align:center;
+    font-size:.92rem; color:var(--sub);
+    border:1px dashed var(--line); border-radius:12px;
+    transition:border-color .2s, color .2s;
+  }
+  .cmd-slot.filled{border-style:solid; color:var(--ice); border-color:rgba(111,141,255,.5);}
+  .cmd-plus{font-family:var(--mono); color:var(--sub);}
+  #cmd-run{
+    font-size:.95rem; font-weight:700; letter-spacing:.25em; text-indent:.25em;
+    padding:8px 24px; border:none; border-radius:12px;
+    background:linear-gradient(180deg, #7f9bff, #5872e6); color:#0a0f1e; cursor:pointer;
+    box-shadow:0 6px 16px rgba(111,141,255,.35);
+    transition:transform .12s, filter .15s;
+  }
+  #cmd-run:hover{filter:brightness(1.08);}
+  #cmd-run:active{transform:scale(.95);}
+  /* 状態表示：残り回数・使用回数・リセットを1行にまとめる */
+  #cmd-status{display:flex; align-items:stretch; gap:14px; flex-wrap:wrap; justify-content:center;}
+  .stat{
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+    min-width:124px; padding:6px 16px;
+    border:1px solid var(--line); border-radius:14px;
+    background:rgba(17,24,39,.5);
+  }
+  .stat b{
+    font-family:var(--mono); font-size:1.3rem; font-weight:700; line-height:1;
+    color:var(--ice);
+  }
+  .stat i{font-style:normal; font-size:.64rem; letter-spacing:.16em; color:var(--sub);}
+  .stat.low{border-color:rgba(255,107,87,.55); background:rgba(255,107,87,.08);}
+  .stat.low b{color:var(--alert);}
+  .stat.used{border-color:rgba(245,181,98,.45); background:rgba(245,181,98,.08);}
+  .stat.used b{color:var(--amber);}
+
+  /* 全リセット：他のボタンと取り違えないよう警告色＋2段表示。
+     誤タップを防ぐため 1.6秒の長押しでのみ実行され、押している間はゲージが伸びる */
+  #cmd-reset{
+    position:relative; overflow:hidden;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+    min-width:172px; padding:6px 18px;
+    font-family:inherit; cursor:pointer;
+    color:var(--alert); background:rgba(255,107,87,.07);
+    border:1px solid rgba(255,107,87,.5); border-radius:14px;
+    transition:background .15s, box-shadow .15s;
+    touch-action:none;
+  }
+  #cmd-reset:hover{background:rgba(255,107,87,.15);}
+  #cmd-reset .rs-main{position:relative; z-index:1; font-size:.95rem; font-weight:700; letter-spacing:.06em;}
+  #cmd-reset .rs-sub{position:relative; z-index:1; font-size:.62rem; letter-spacing:.14em; opacity:.8;}
+  #cmd-reset::before{                       /* 長押しゲージ */
+    content:""; position:absolute; left:0; top:0; bottom:0; width:100%;
+    background:rgba(255,107,87,.3);
+    transform:scaleX(0); transform-origin:left center;
+  }
+  #cmd-reset.holding{box-shadow:0 0 18px rgba(255,107,87,.35);}
+  #cmd-reset.holding::before{animation:holdfill 1.6s linear forwards;}
+  @keyframes holdfill{to{transform:scaleX(1);}}
+  #cmd-chips{
+    display:grid; grid-template-columns:repeat(5, 1fr); gap:7px;
+    width:min(720px,100%);
+  }
+  .cmd-chip{
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+    height:46px; border-radius:11px; cursor:pointer;
+    color:var(--ice);
+    background:linear-gradient(180deg, #202b48, #141c33);
+    border:1px solid rgba(150,178,255,.20); border-bottom-color:rgba(150,178,255,.08);
+    box-shadow:0 3px 0 #070b16, 0 5px 12px rgba(0,0,0,.38), inset 0 1px 0 rgba(255,255,255,.08);
+    transition:transform .05s, box-shadow .05s, border-color .15s, background .15s;
+    touch-action:manipulation;
+  }
+  .cmd-chip:hover{border-color:rgba(111,141,255,.6);}
+  .cmd-chip:active{transform:translateY(3px); box-shadow:0 0 0 #070b16, 0 0 16px rgba(111,141,255,.35);}
+  .cmd-chip.sel{
+    border-color:var(--pulse); background:rgba(111,141,255,.2);
+    box-shadow:0 0 0 #070b16, 0 0 16px rgba(111,141,255,.35);
+    transform:translateY(3px);
+  }
+  .cmd-chip .ce{font-family:var(--mono); font-size:.98rem;}
+  .cmd-chip .cj{font-size:.6rem; color:var(--sub); letter-spacing:.08em;}
+  #cmd-effect{
+    min-height:1.5em; width:min(720px,100%);
+    text-align:left;
+    font-size:.98rem; letter-spacing:.06em; color:var(--ice);
+  }
+
+  /* ---------- 時計カードのロック状態（laptopコマンドで解除） ---------- */
+  #home-clock.locked{filter:saturate(.35) brightness(.82);}
+  #home-clock.locked #home-clock-svg,
+  #home-clock.locked #home-clock-date{display:none;}
+  .fc-lockicon{display:none; width:42px; height:42px;}
+  .fc-lockcap{display:none; font-family:var(--mono); font-size:.58rem; letter-spacing:.42em; text-indent:.42em; color:var(--sub);}
+  #home-clock.locked .fc-lockicon{display:block;}
+  #home-clock.locked .fc-lockcap{display:block;}
+  #home-clock.locked .fc-go{animation:none; opacity:.25;}
+  /* 時計追加後：確認するまで NEW バッジと明滅を出し続ける（恒常表示） */
+  .fc-newbadge{
+    display:none; position:absolute; top:-9px; right:-9px;
+    font-family:var(--mono); font-size:.58rem; font-weight:700; letter-spacing:.18em;
+    color:#0a0f1e; background:var(--clock-ink);
+    border-radius:999px; padding:3px 10px;
+    box-shadow:0 0 16px var(--clock-glow);
+  }
+  .fn-card.notify .fc-newbadge{display:block;}
+  /* 確認を促す明滅リング（時計アプリを開くと消える） */
+  .fn-card.notify{animation:notifyring 1.6s ease-in-out infinite;}
+  @keyframes notifyring{
+    0%,100%{box-shadow:0 18px 40px rgba(0,0,0,.45), 0 0 0 0 rgba(255,82,82,0), inset 0 1px 0 rgba(255,255,255,.06);}
+    50%{box-shadow:0 18px 40px rgba(0,0,0,.45), 0 0 0 4px rgba(255,82,82,.4), 0 0 30px rgba(255,82,82,.32), inset 0 1px 0 rgba(255,255,255,.06);}
+  }
+  @keyframes cardshake{
+    0%,100%{transform:translateX(0);}
+    25%{transform:translateX(-6px);} 50%{transform:translateX(5px);} 75%{transform:translateX(-3px);}
+  }
+  .fn-card.shake{animation:cardshake .32s ease;}
+
+  /* ---------- CLOCK ON 演出（laptopコマンド成功時） ---------- */
+  #clockon{
+    position:fixed; inset:0; z-index:70;
+    display:flex; align-items:center; justify-content:center;
+    pointer-events:none; opacity:0;
+  }
+  #clockon span{
+    font-family:var(--mono); font-weight:700;
+    font-size:clamp(2.2rem, 6vw, 3.6rem);
+    letter-spacing:.5em; text-indent:.5em;
+    color:var(--clock-ink);
+    text-shadow:0 0 24px var(--clock-glow), 0 0 70px var(--clock-glow);
+    padding:18px 40px;
+    border-top:1px solid var(--clock-ink);
+    border-bottom:1px solid var(--clock-ink);
+  }
+  /* ホームに戻るまで出したままにする（確認を促す） */
+  #clockon.show{opacity:1; animation:clockonin .5s ease both;}
+  @keyframes clockonin{from{opacity:0; transform:scale(.92);} to{opacity:1; transform:scale(1);}}
+  @keyframes clockon{
+    0%{opacity:0; transform:scale(.92);}
+    14%{opacity:1; transform:scale(1);}
+    80%{opacity:1; transform:scale(1);}
+    100%{opacity:0; transform:scale(1.04);}
+  }
+
+  /* ---------- 棒人間の演出（action） ---------- */
+  #runner{
+    position:fixed; left:0; right:0; bottom:0; height:130px;
+    z-index:64; pointer-events:none; overflow:hidden; display:none;
+  }
+  #runner.on{display:block;}
+  #runner-svg{
+    position:absolute; left:0; bottom:8px;
+    width:120px; height:118px; overflow:visible;
+    will-change:transform;
+  }
+
+  /* ---------- 雨の演出（train → rain） ---------- */
+  #rain{position:fixed; inset:0; z-index:85; pointer-events:none; overflow:hidden; display:none;}
+  #rain.on{display:block;}
+  #rain i{
+    position:absolute; top:-14%;
+    width:2px; height:72px;
+    background:linear-gradient(180deg, transparent, rgba(165,195,255,.75));
+    animation:raindrop linear infinite;
+  }
+  @keyframes raindrop{to{transform:translateY(125vh);}}
+
+  /* ---------- 起動シーケンス ----------
+     待機（電源ボタン）→ .playing（起動モーション）→ .hidden（ホームへ） */
+  #boot{
+    position:fixed; inset:0; z-index:100;
+    background:var(--void);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:26px; cursor:pointer;
+  }
+  #boot.hidden{transition:opacity .5s ease; opacity:0; pointer-events:none;}
+
+  /* 待機状態：呼吸する電源ボタン */
+  #boot-standby{display:flex; flex-direction:column; align-items:center; gap:34px;}
+  #boot.playing #boot-standby{display:none;}
+  #boot-power{
+    width:118px; height:118px;
+    filter:drop-shadow(0 0 22px rgba(111,141,255,.55));
+    animation:breathe 2.6s ease-in-out infinite;
+  }
+  @keyframes breathe{
+    0%,100%{transform:scale(1); opacity:.72;}
+    50%{transform:scale(1.07); opacity:1;}
+  }
+  #boot-start-cap{
+    font-family:var(--mono); font-size:.7rem; letter-spacing:.46em; text-indent:.46em;
+    color:var(--sub); animation:capfade 2.6s ease-in-out infinite;
+  }
+  @keyframes capfade{0%,100%{opacity:.35;} 50%{opacity:1;}}
+
+  /* 再生状態：ロゴ点灯 → バー → システムチェック */
+  #boot-play{display:none; flex-direction:column; align-items:center; gap:26px;}
+  #boot.playing #boot-play{display:flex;}
+  #boot-logo{
+    font-family:var(--mono); font-size:clamp(1.8rem,4.5vw,3rem);
+    font-weight:700; letter-spacing:.5em; text-indent:.5em; color:var(--ice);
+    display:flex;
+  }
+  #boot-logo b{opacity:0; animation:bootchar .4s ease forwards; color:inherit; font-weight:inherit;}
+  #boot-logo b.hl{color:var(--pulse); text-shadow:0 0 22px var(--pulse-soft);}
+  @keyframes bootchar{from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:none;}}
+  #boot-bar{
+    width:min(340px,70vw); height:2px; background:rgba(150,178,255,.14);
+    border-radius:2px; overflow:hidden;
+  }
+  #boot-bar i{
+    display:block; height:100%; width:0%;
+    background:linear-gradient(90deg, var(--pulse), #a8beff);
+    box-shadow:0 0 14px var(--pulse);
+  }
+  #boot.playing #boot-bar i{animation:bootfill 1.7s .35s cubic-bezier(.3,.6,.3,1) forwards;}
+  @keyframes bootfill{to{width:100%;}}
+  #boot-lines{
+    font-family:var(--mono); font-size:.66rem; letter-spacing:.3em;
+    color:rgba(143,160,196,.6); text-align:center; line-height:2;
+  }
+  #boot-lines div{opacity:0; animation:bootchar .3s ease forwards;}
+  #boot-skip{
+    position:absolute; bottom:26px; display:none;
+    font-family:var(--mono); font-size:.62rem; letter-spacing:.3em;
+    color:rgba(143,160,196,.4);
+  }
+  #boot.playing #boot-skip{display:block;}
+
+  /* ---------- トースト（時刻リセット等の通知） ---------- */
+  #toast{
+    position:fixed; left:50%; bottom:28px;
+    transform:translateX(-50%) translateY(10px);
+    z-index:95; font-family:var(--mono); font-size:.7rem; letter-spacing:.3em;
+    color:var(--ice); background:rgba(17,24,39,.88);
+    border:1px solid var(--line); border-radius:999px; padding:9px 20px;
+    opacity:0; pointer-events:none; transition:opacity .25s ease, transform .25s ease;
+  }
+  #toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  /* ---------- 取扱説明書ビューア（端末内で表示） ---------- */
+  #manual-view{
+    position:fixed; inset:0; z-index:92;
+    display:none; flex-direction:column; background:var(--deep);
+  }
+  #manual-view.open{display:flex;}
+  #manual-view .mv-bar{
+    flex:0 0 auto; display:flex; align-items:center; justify-content:space-between;
+    padding:10px 18px; border-bottom:1px solid var(--line);
+    background:rgba(13,19,35,.92);
+    font-family:var(--mono); font-size:.78rem; letter-spacing:.24em; color:var(--sub);
+  }
+  #manual-frame{flex:1 1 auto; width:100%; border:0; background:var(--void);}
+
+  /* ---------- 運営用パネル ---------- */
+  #staff, #settings{
+    position:fixed; inset:0; z-index:90;
+    background:rgba(4,7,14,.66); backdrop-filter:blur(4px);
+    display:none; align-items:center; justify-content:center;
+  }
+  #staff.open, #settings.open{display:flex;}
+  #staff .card, #settings .card{
+    background:linear-gradient(180deg, #121a2e, #0c1222);
+    border:1px solid var(--line);
+    border-radius:var(--radius); padding:30px 34px;
+    width:min(440px,92vw); display:flex; flex-direction:column; gap:18px;
+    box-shadow:0 40px 90px rgba(0,0,0,.6);
+  }
+  #staff h3, #settings h3{
+    margin:0; font-family:var(--mono); font-size:.8rem;
+    letter-spacing:.4em; color:var(--pulse);
+  }
+  #staff label, #settings label{display:flex; align-items:center; gap:10px; font-size:.95rem;}
+  #staff input[type="time"]{
+    font-size:1.05rem; padding:6px 10px; font-family:var(--mono);
+    background:rgba(10,15,28,.8); color:var(--ice);
+    border:1px solid var(--line); border-radius:8px;
+  }
+  #staff .row, #settings .row{display:flex; gap:12px; justify-content:flex-end;}
+  #staff button, #settings button{
+    font-family:inherit; border-radius:10px; padding:9px 20px;
+    font-size:.92rem; cursor:pointer;
+    border:1px solid var(--line); background:rgba(17,24,39,.6); color:var(--ice);
+  }
+  #staff button.primary, #settings button.primary{
+    background:linear-gradient(180deg, #7f9bff, #5872e6);
+    color:#0a0f1e; border:none; font-weight:700;
+  }
+  #staff .note, #settings .note{font-size:.78rem; color:var(--sub); line-height:1.7;}
+  /* 音量・明るさのスライダー */
+  #settings label.slider{gap:14px;}
+  #settings label.slider .lb{flex:0 0 auto; width:3.6em; letter-spacing:.12em;}
+  #settings label.slider .val{
+    flex:0 0 auto; width:2.6em; text-align:right;
+    font-family:var(--mono); font-size:.82rem; color:var(--sub);
+  }
+  #settings input[type="range"]{
+    flex:1 1 auto; -webkit-appearance:none; appearance:none;
+    height:5px; border-radius:999px; background:rgba(150,178,255,.22);
+    outline:none; cursor:pointer;
+  }
+  #settings input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none;
+    width:20px; height:20px; border-radius:50%;
+    background:linear-gradient(180deg, #9db7ff, #5872e6);
+    border:none; box-shadow:0 2px 8px rgba(0,0,0,.5);
+  }
+  #settings input[type="range"]::-moz-range-thumb{
+    width:20px; height:20px; border-radius:50%; border:none;
+    background:linear-gradient(180deg, #9db7ff, #5872e6);
+    box-shadow:0 2px 8px rgba(0,0,0,.5);
+  }
+
+  /* ---------- モーション低減設定への配慮 ---------- */
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{animation-duration:.01ms !important; transition-duration:.01ms !important;}
+  }
+</style>
+</head>
+<body class="theme-invert">
+
+<!-- ============ 起動シーケンス（待機 → クリックで起動モーション） ============ -->
+<div id="boot">
+  <div id="boot-standby">
+    <svg id="boot-power" viewBox="0 0 64 64" fill="none" stroke="#9db7ff"
+         stroke-width="3.5" stroke-linecap="round" aria-label="起動">
+      <path d="M 42 18.7 A 20 20 0 1 1 22 18.7"/>
+      <line x1="32" y1="12" x2="32" y2="32"/>
+    </svg>
+    <span id="boot-start-cap">TAP TO START</span>
+  </div>
+  <div id="boot-play">
+    <div id="boot-logo"></div>
+    <div id="boot-bar"><i></i></div>
+    <div id="boot-lines"></div>
+  </div>
+  <span id="boot-skip">TAP TO SKIP</span>
+</div>
+
+<div id="device">
+
+  <!-- ステータスバー（RESTART：クリック=起動モーション再生してホームへ / 長押し2秒=運営用パネル） -->
+  <div id="statusbar">
+    <button id="logo">⟳ RESTART</button>
+    <span class="right">
+      <button id="settings-btn" aria-label="設定を開く">⚙ 設定</button>
+    </span>
+  </div>
+
+  <div id="screens">
+
+  <!-- ============ ホーム ============ -->
+  <section class="screen active" id="home">
+    <div class="stagger">
+      <div id="home-logo">PARALLELS<em>-OS</em></div>
+      <div id="home-sub">端末 ver 0.9.2</div>
+      <div class="apps">
+
+        <!-- 時計カード：初期はロック状態で存在。「laptop」コマンドで解除 -->
+        <button class="fn-card locked" id="home-clock" data-open="app-clock">
+          <span class="fc-top"><span class="fc-idx">01</span><span class="fc-en">CLOCK</span></span>
+          <span class="fc-screen">
+            <svg id="home-clock-svg" viewBox="0 0 700 160" aria-hidden="true"></svg>
+            <span id="home-clock-date"></span>
+            <svg class="fc-lockicon" viewBox="0 0 64 64" fill="none" stroke="#8fa0c4"
+                 stroke-width="4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="16" y="28" width="32" height="26" rx="6"/>
+              <path d="M22 28 v-6 a10 10 0 0 1 20 0 v6"/>
+              <circle cx="32" cy="41" r="3.5" fill="#8fa0c4" stroke="none"/>
+            </svg>
+            <span class="fc-lockcap">LOCKED</span>
+          </span>
+          <span class="fc-newbadge">NEW</span>
+          <span class="fc-bottom"><span class="fc-name">時計</span><span class="fc-go">›</span></span>
+        </button>
+
+        <button class="fn-card" data-open="app-translate">
+          <span class="fc-top"><span class="fc-idx">02</span><span class="fc-en">TRANSLATE</span></span>
+          <span class="fc-screen">
+            <svg class="fc-icon" viewBox="0 0 64 64" fill="none" stroke="#9db7ff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="6" y="10" width="30" height="30" rx="7"/>
+              <text x="21" y="32" text-anchor="middle" font-size="17" fill="#9db7ff" stroke="none" font-family="sans-serif" font-weight="bold">あ</text>
+              <rect x="28" y="26" width="30" height="30" rx="7" fill="#0d1424"/>
+              <text x="43" y="48" text-anchor="middle" font-size="17" fill="#9db7ff" stroke="none" font-family="sans-serif" font-weight="bold">A</text>
+            </svg>
+          </span>
+          <span class="fc-bottom"><span class="fc-name">翻訳</span><span class="fc-go">›</span></span>
+        </button>
+
+        <button class="fn-card" data-open="app-map">
+          <span class="fc-top"><span class="fc-idx">03</span><span class="fc-en">MAP</span></span>
+          <span class="fc-screen">
+            <svg class="fc-icon" viewBox="0 0 64 64" fill="none" stroke="#9db7ff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10 16 L26 10 L38 16 L54 10 V48 L38 54 L26 48 L10 54 Z"/>
+              <path d="M26 10 V48 M38 16 V54"/>
+            </svg>
+          </span>
+          <span class="fc-bottom"><span class="fc-name">マップ</span><span class="fc-go">›</span></span>
+        </button>
+
+        <!-- 隠し機能：簡易コマンド（ロゴ長押し or 5連続タップで出現） -->
+        <button class="fn-card" id="home-command" data-open="app-command" hidden>
+          <span class="fc-top"><span class="fc-idx">04</span><span class="fc-en">COMMAND</span></span>
+          <span class="fc-screen">
+            <svg class="fc-icon" viewBox="0 0 64 64" fill="none" stroke="#9db7ff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="8" y="12" width="48" height="40" rx="7"/>
+              <path d="M17 26 L25 32 L17 38"/>
+              <path d="M30 40 H44"/>
+            </svg>
+          </span>
+          <span class="fc-bottom"><span class="fc-name">コマンド</span><span class="fc-go">›</span></span>
+        </button>
+
+      </div>
+      <div id="ticker"><span id="ticker-text">SYSTEM READY</span></div>
+    </div>
+  </section>
+
+  <!-- ============ 翻訳 ============ -->
+  <section class="screen" id="app-translate">
+    <div class="app-header">
+      <button class="back-btn" data-open="home">← HOME</button>
+      <h2>翻訳</h2>
+      <span class="app-tag">JP → EN</span>
+    </div>
+    <div class="app-body stagger">
+      <div id="tr-form">
+        <span id="tr-label">ローマ字で入力 — ROMAJI INPUT</span>
+        <div id="tr-row">
+          <input id="tr-input" type="text" inputmode="none" autocomplete="off" placeholder="例：ringo → りんご">
+          <button id="tr-go">翻訳</button>
+        </div>
+      </div>
+      <div id="tr-result">
+        <span class="cap">TRANSLATION</span>
+        <div id="tr-scan"></div>
+        <div id="tr-tiles"></div>
+        <span id="tr-error">error</span>
+        <span id="tr-hint">READY</span>
+      </div>
+      <!-- タッチキーボード（ローマ字入力。文字キーはJSで生成） -->
+      <div id="kbd" aria-label="タッチキーボード">
+        <div class="kbd-row" id="kbd-num"></div>
+        <div class="kbd-row" data-keys="qwertyuiop"></div>
+        <div class="kbd-row indent1" data-keys="asdfghjkl"></div>
+        <div class="kbd-row indent2" data-keys="zxcvbnm" data-extra="bs"></div>
+        <div class="kbd-row">
+          <button class="kbd-key fn" id="kbd-clear">クリア</button>
+          <button class="kbd-key dash" data-ch="ー">ー</button>
+          <button class="kbd-key go" id="kbd-go">翻訳</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 時計 ============ -->
+  <section class="screen" id="app-clock">
+    <div class="app-header">
+      <button class="back-btn" data-open="home">← HOME</button>
+      <h2>時計</h2>
+      <span class="app-tag">DIGITAL CLOCK</span>
+    </div>
+    <div class="app-body stagger">
+      <div id="clock-face">
+        <svg id="clock-svg" viewBox="0 0 700 160" width="700" height="160" aria-label="デジタル時計"></svg>
+      </div>
+      <span id="clock-date"></span>
+    </div>
+  </section>
+
+  <!-- ============ マップ ============ -->
+  <section class="screen" id="app-map">
+    <div class="app-header">
+      <button class="back-btn" data-open="home">← HOME</button>
+      <h2>マップ</h2>
+      <span class="app-tag">BOOTH PLAN</span>
+    </div>
+    <div class="app-body stagger">
+      <div id="map-wrap">
+        <svg id="map-svg" viewBox="0 0 800 520" role="img" aria-label="ブース内マップ"></svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 簡易コマンド ============ -->
+  <section class="screen" id="app-command">
+    <div class="app-header">
+      <button class="back-btn" data-open="home">← HOME</button>
+      <h2>コマンド</h2>
+      <span class="app-tag">QUICK COMMAND</span>
+    </div>
+    <div class="app-body stagger">
+      <!-- 電気看板 -->
+      <div id="sign">
+        <span class="cap">SIGNBOARD</span>
+        <div id="sign-letters">
+          <span class="sg" data-ch="u">U</span><span class="sg" data-ch="n">N</span><span class="sg" data-ch="l">L</span><span class="sg" data-ch="o">O</span><span class="sg" data-ch="c">C</span><span class="sg" data-ch="k">K</span>
+        </div>
+      </div>
+      <!-- 選択スロットと実行 -->
+      <div id="cmd-slots">
+        <span class="cmd-slot" id="cmd-slot1">カメラ１</span>
+        <span class="cmd-plus">＋</span>
+        <span class="cmd-slot" id="cmd-slot2">カメラ２</span>
+        <button id="cmd-run">実行</button>
+        <button id="cmd-clear" class="back-btn">クリア</button>
+      </div>
+      <!-- 状態表示（残り回数・使用回数・リセット） -->
+      <div id="cmd-status">
+        <span class="stat" id="stat-remain">
+          <b id="cmd-runs">10</b><i>コマンド残り回数</i>
+        </span>
+        <span class="stat used" id="stat-used" hidden>
+          <b id="cmd-used">0</b><i>端末の使用回数</i>
+        </span>
+        <button id="cmd-reset" type="button" hidden>
+          <span class="rs-main">⟲ 長押しでリセット</span>
+          <span class="rs-sub">コマンドの効果を全て消す</span>
+        </button>
+      </div>
+      <!-- ワード選択肢（日本語×英単語） -->
+      <div id="cmd-chips"></div>
+      <div id="cmd-effect" aria-live="polite"></div>
+    </div>
+  </section>
+
+  </div><!-- /#screens -->
+</div>
+
+<!-- ============ 設定（取説 / 配色 / ガチャ） ============ -->
+<div id="settings" role="dialog" aria-label="設定">
+  <div class="card">
+    <h3>SETTINGS</h3>
+    <label>
+      <button id="set-manual" type="button">取扱説明書を見る</button>
+    </label>
+    <label class="slider">
+      <span class="lb">音量</span>
+      <input id="set-vol" type="range" min="0" max="100" step="5" value="85" aria-label="音量">
+      <span class="val" id="set-vol-val">85</span>
+    </label>
+    <label class="slider">
+      <span class="lb">明るさ</span>
+      <input id="set-bright" type="range" min="55" max="130" step="5" value="100" aria-label="画面の明るさ">
+      <span class="val" id="set-bright-val">100</span>
+    </label>
+    <div class="row">
+      <button id="set-close">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- 取扱説明書ビューア -->
+<div id="manual-view" role="dialog" aria-label="取扱説明書">
+  <div class="mv-bar">
+    <span>OPERATION MANUAL ─ 取扱説明書</span>
+    <button id="manual-close" class="back-btn">閉じる ✕</button>
+  </div>
+  <iframe id="manual-frame" title="取扱説明書"></iframe>
+</div>
+
+<!-- ============ 運営用パネル ============ -->
+<div id="staff">
+  <div class="card">
+    <h3>STAFF PANEL</h3>
+    <label>
+      指定時刻から進行：
+      <input type="time" id="staff-time" value="19:30" step="60">
+    </label>
+    <label>
+      <button id="staff-fs-btn" type="button">全画面を解除する</button>
+    </label>
+    <label>
+      復旧用：
+      <button id="staff-show-clock" type="button">時計ロック解除</button>
+      <button id="staff-unlock-cmd" type="button">コマンド解禁</button>
+    </label>
+    <span class="note">初期状態では作中時刻 <b>19:30</b> から進行します（作中公演は 19:30〜20:00）。<b>Ctrl + Shift</b> を同時押しすると、いつでも 19:30 にリセットできます。全画面表示の解除・再開は上のボタンで即座に切り替わります（解除中はタッチしても全画面に戻りません）。</span>
+    <div class="row">
+      <button id="staff-close">閉じる</button>
+      <button id="staff-apply" class="primary">設定</button>
+    </div>
+  </div>
+</div>
+
+<!-- 演出：laptopコマンド成功時の「CLOCK ON」表示 -->
+<div id="clockon" aria-hidden="true"><span>CLOCK ON</span></div>
+
+<!-- 演出：棒人間が走る（action コマンド） -->
+<div id="runner" aria-hidden="true">
+  <svg id="runner-svg" viewBox="-60 -110 120 118"></svg>
+</div>
+
+<!-- 演出：雨（train→rain コマンド） -->
+<div id="rain" aria-hidden="true"></div>
+
+<!-- 時刻リセット等の通知 -->
+<div id="toast"></div>
+
+<script>
+/* ================================================================
+   共通ヘルパー
+   ================================================================ */
+const $ = id => document.getElementById(id);
+const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ================================================================
+   1. 翻訳辞書（ここを編集すれば語彙を増減できます）
+   キー = 出力される英単語（小文字）
+   値   = 受け付ける日本語表記の配列
+          （ひらがな・カタカナ・全角半角は自動で吸収されます）
+   ================================================================ */
+/* ================================================================
+   翻訳辞書
+   ----------------------------------------------------------------
+   ★ 追加のしかた ★
+   下の DICT_TEXT の中に、1行ずつ
+        ひらがな、漢字 = english
+   の形で書き足すだけで、そのまま翻訳に反映されます。
+     ・区切りは「=」のほか「：」「:」「タブ」でも可
+     ・読みが複数あるときは「、」「,」「/」で並べる
+         例）  りんご、林檎、アップル = apple
+     ・カタカナ・全角・漢字はどれでもOK（自動で同一視されます）
+     ・「#」から行末まではコメント。空行は無視されます
+   他所からコピーした一覧をそのまま貼り付けても動きます。
+   ================================================================ */
+const DICT_TEXT = `
+# ===== 謎解きに関係する語（消さないでください） =====
+ゆうがた、夕方 = evening
+なな、しち、七、7 = seven
+わ、輪、ゆびわ、指輪 = ring
+たいよう、太陽 = sun
+とけい、時計 = clock
+さえずり、囀り = song
+かいてん、回転 = spin
+とりかご、鳥かご、鳥籠 = cage
+にゅーす、ニュース = news
+みみ、耳 = ear
+
+# ===== 人・体 =====
+ひと、人 = person
+おとこ、男 = man
+おんな、女 = woman
+こども、子供 = child
+あかちゃん、赤ちゃん = baby
+ともだち、友達 = friend
+せんせい、先生 = teacher
+がくせい、学生 = student
+いしゃ、医者 = doctor
+けいさつ、警察 = police
+あたま、頭 = head
+かお、顔 = face
+め、目 = eye
+はな、鼻 = nose
+くち、口 = mouth
+は、歯 = tooth
+かみのけ、髪 = hair
+くび、首 = neck
+かた、肩 = shoulder
+うで、腕 = arm
+て、手 = hand
+ゆび、指 = finger
+つめ、爪 = nail
+あし、足 = leg
+ひざ、膝 = knee
+せなか、背中 = back
+おなか、お腹 = stomach
+むね、胸 = chest
+こころ、心 = heart
+ちから、力 = power
+こえ、声 = voice
+なまえ、名前 = name
+
+# ===== 家族 =====
+かぞく、家族 = family
+ちち、父、おとうさん = father
+はは、母、おかあさん = mother
+あに、兄 = brother
+あね、姉 = sister
+むすこ、息子 = son
+むすめ、娘 = daughter
+そふ、祖父 = grandfather
+そぼ、祖母 = grandmother
+
+# ===== 動物 =====
+どうぶつ、動物 = animal
+いぬ、犬 = dog
+ねこ、猫 = cat
+うま、馬 = horse
+うし、牛 = cow
+ぶた、豚 = pig
+ひつじ、羊 = sheep
+やぎ、山羊 = goat
+さる、猿 = monkey
+きつね、狐 = fox
+たぬき、狸 = raccoon
+うさぎ、兎 = rabbit
+ねずみ、鼠 = mouse
+ぞう、象 = elephant
+きりん、麒麟 = giraffe
+とら、虎 = tiger
+おおかみ、狼 = wolf
+しか、鹿 = deer
+くじら、鯨 = whale
+いるか、海豚 = dolphin
+さめ、鮫 = shark
+さかな、魚 = fish
+かめ、亀 = turtle
+へび、蛇 = snake
+かえる、蛙 = frog
+むし、虫 = insect
+ちょう、蝶 = butterfly
+はち、蜂 = bee
+あり、蟻 = ant
+くも、蜘蛛 = spider
+にわとり、鶏 = chicken
+あひる、家鴨 = duck
+はと、鳩 = pigeon
+からす、烏 = crow
+ふくろう、梟 = owl
+わし、鷲 = eagle
+ぺんぎん = penguin
+らくだ、駱駝 = camel
+かに、蟹 = crab
+えび、海老 = shrimp
+たこ、蛸 = octopus
+いか、烏賊 = squid
+かい、貝 = shell
+
+# ===== 食べ物・飲み物 =====
+たべもの、食べ物 = food
+のみもの、飲み物 = drink
+みず、水 = water
+おゆ、お湯 = hot water
+おちゃ、お茶 = tea
+こーひー、珈琲 = coffee
+ぎゅうにゅう、牛乳、みるく = milk
+じゅーす = juice
+さけ、酒 = alcohol
+びーる = beer
+ぱん、パン = bread
+ごはん、ご飯 = rice
+こめ、米 = rice
+にく、肉 = meat
+たまご、卵 = egg
+やさい、野菜 = vegetable
+くだもの、果物 = fruit
+りんご、林檎 = apple
+みかん、蜜柑 = orange
+ばなな = banana
+いちご、苺 = strawberry
+ぶどう、葡萄 = grape
+もも、桃 = peach
+すいか、西瓜 = watermelon
+めろん = melon
+れもん、檸檬 = lemon
+とまと = tomato
+にんじん、人参 = carrot
+じゃがいも、じゃが芋 = potato
+たまねぎ、玉葱 = onion
+きゅうり、胡瓜 = cucumber
+きゃべつ = cabbage
+なす、茄子 = eggplant
+とうもろこし = corn
+きのこ、茸 = mushroom
+まめ、豆 = bean
+しお、塩 = salt
+さとう、砂糖 = sugar
+こしょう、胡椒 = pepper
+あぶら、油 = oil
+みそ、味噌 = miso
+しょうゆ、醤油 = soy sauce
+すーぷ = soup
+さらだ = salad
+けーき = cake
+ちょこれーと = chocolate
+あいすくりーむ = ice cream
+あめ、飴 = candy
+くっきー = cookie
+はちみつ、蜂蜜 = honey
+ちーず = cheese
+ばたー = butter
+すし、寿司 = sushi
+らーめん = ramen
+かれー = curry
+ぴざ = pizza
+はんばーがー = hamburger
+さんどいっち = sandwich
+すぱげってぃ = spaghetti
+
+# ===== 自然・天気 =====
+しぜん、自然 = nature
+そら、空 = sky
+くも、雲 = cloud
+あめ、雨 = rain
+ゆき、雪 = snow
+かぜ、風 = wind
+かみなり、雷 = thunder
+あらし、嵐 = storm
+にじ、虹 = rainbow
+きり、霧 = fog
+つき、月 = moon
+ほし、星 = star
+うみ、海 = sea
+やま、山 = mountain
+かわ、川 = river
+みずうみ、湖 = lake
+いけ、池 = pond
+もり、森 = forest
+はやし、林 = woods
+き、木 = tree
+はっぱ、葉 = leaf
+はな、花 = flower
+くさ、草 = grass
+たね、種 = seed
+ね、根 = root
+いし、石 = stone
+すな、砂 = sand
+つち、土 = soil
+ひ、火 = fire
+こおり、氷 = ice
+かじつ、実 = fruit
+しま、島 = island
+たき、滝 = waterfall
+たに、谷 = valley
+おか、丘 = hill
+はまべ、浜辺 = beach
+なみ、波 = wave
+ひかり、光 = light
+かげ、影 = shadow
+そよかぜ、微風 = breeze
+きせつ、季節 = season
+はる、春 = spring
+なつ、夏 = summer
+あき、秋 = autumn
+ふゆ、冬 = winter
+てんき、天気 = weather
+
+# ===== 時間・暦 =====
+じかん、時間 = time
+とき、時 = time
+いま、今 = now
+きょう、今日 = today
+あした、明日 = tomorrow
+きのう、昨日 = yesterday
+あさ、朝 = morning
+ひる、昼 = noon
+よる、夜 = night
+まよなか、真夜中 = midnight
+ひ、日 = day
+しゅう、週 = week
+つき、月 = month
+とし、年 = year
+びょう、秒 = second
+ふん、分 = minute
+にちようび、日曜日 = sunday
+げつようび、月曜日 = monday
+かようび、火曜日 = tuesday
+すいようび、水曜日 = wednesday
+もくようび、木曜日 = thursday
+きんようび、金曜日 = friday
+どようび、土曜日 = saturday
+たんじょうび、誕生日 = birthday
+やすみ、休み = holiday
+みらい、未来 = future
+かこ、過去 = past
+
+# ===== 場所・建物 =====
+ばしょ、場所 = place
+いえ、家 = house
+うち = home
+へや、部屋 = room
+だいどころ、台所 = kitchen
+ふろ、風呂 = bath
+といれ = toilet
+にわ、庭 = garden
+まど、窓 = window
+ど、戸 = door
+とびら、扉 = door
+かべ、壁 = wall
+ゆか、床 = floor
+てんじょう、天井 = ceiling
+かいだん、階段 = stairs
+やね、屋根 = roof
+がっこう、学校 = school
+びょういん、病院 = hospital
+としょかん、図書館 = library
+はくぶつかん、博物館 = museum
+びじゅつかん、美術館 = gallery
+えき、駅 = station
+くうこう、空港 = airport
+みなと、港 = harbor
+こうえん、公園 = park
+みせ、店 = shop
+いちば、市場 = market
+ぎんこう、銀行 = bank
+ゆうびんきょく、郵便局 = post office
+ほてる = hotel
+れすとらん = restaurant
+きっさてん、喫茶店 = cafe
+かいしゃ、会社 = company
+こうじょう、工場 = factory
+きょうかい、教会 = church
+じんじゃ、神社 = shrine
+おてら、寺 = temple
+しろ、城 = castle
+はし、橋 = bridge
+みち、道 = road
+まち、町 = town
+むら、村 = village
+くに、国 = country
+せかい、世界 = world
+ちきゅう、地球 = earth
+うちゅう、宇宙 = space
+つくえ、机 = desk
+いす、椅子 = chair
+べっど = bed
+ほんだな、本棚 = bookshelf
+
+# ===== 乗り物 =====
+のりもの、乗り物 = vehicle
+じてんしゃ、自転車 = bicycle
+ばいく = motorcycle
+ばす = bus
+たくしー = taxi
+でんしゃ、電車 = train
+ちかてつ、地下鉄 = subway
+ひこうき、飛行機 = airplane
+ろけっと = rocket
+きゅうきゅうしゃ、救急車 = ambulance
+しょうぼうしゃ、消防車 = fire engine
+とらっく = truck
+ぼーと = boat
+
+# ===== 道具・持ち物 =====
+どうぐ、道具 = tool
+かばん、鞄 = bag
+さいふ、財布 = wallet
+かぎ、鍵 = key
+とけいだい、時計台 = clock tower
+かさ、傘 = umbrella
+ぼうし、帽子 = hat
+めがね、眼鏡 = glasses
+かがみ、鏡 = mirror
+ほん、本 = book
+のーと = notebook
+えんぴつ、鉛筆 = pencil
+けしごむ、消しゴム = eraser
+かみ、紙 = paper
+はさみ、鋏 = scissors
+のり、糊 = glue
+じょうぎ、定規 = ruler
+ふで、筆 = brush
+いんく = ink
+てがみ、手紙 = letter
+きって、切手 = stamp
+はがき、葉書 = postcard
+しんぶん、新聞 = newspaper
+ざっし、雑誌 = magazine
+ちず、地図 = map
+しゃしん、写真 = photo
+かめら = camera
+でんわ、電話 = telephone
+ぱそこん = computer
+てれび = television
+らじお = radio
+でんち、電池 = battery
+でんとう、電灯 = lamp
+ろうそく、蝋燭 = candle
+まっち = match
+なべ、鍋 = pot
+さら、皿 = plate
+こっぷ = cup
+ちゃわん、茶碗 = bowl
+おはし、箸 = chopsticks
+すぷーん = spoon
+ふぉーく = fork
+ないふ = knife
+びん、瓶 = bottle
+はこ、箱 = box
+ふくろ、袋 = bag
+かご、籠 = basket
+つな、綱 = rope
+いと、糸 = thread
+はり、針 = needle
+くぎ、釘 = nail
+はんまー = hammer
+のこぎり、鋸 = saw
+ほうき、箒 = broom
+たおる = towel
+せっけん、石鹸 = soap
+くすり、薬 = medicine
+おかね、お金 = money
+きっぷ、切符 = ticket
+てちょう、手帳 = planner
+かれんだー = calendar
+おもちゃ、玩具 = toy
+にんぎょう、人形 = doll
+ぼーる = ball
+ふうせん、風船 = balloon
+たからばこ、宝箱 = treasure box
+たから、宝 = treasure
+
+# ===== 衣服 =====
+ふく、服 = clothes
+しゃつ = shirt
+ずぼん = pants
+すかーと = skirt
+どれす = dress
+こーと = coat
+せーたー = sweater
+くつ、靴 = shoes
+くつした、靴下 = socks
+てぶくろ、手袋 = gloves
+まふらー = scarf
+べると = belt
+ぼたん = button
+ぽけっと = pocket
+ゆびわだい、指輪台 = ring stand
+
+# ===== 色 =====
+いろ、色 = color
+あか、赤 = red
+あお、青 = blue
+きいろ、黄色 = yellow
+みどり、緑 = green
+しろ、白 = white
+くろ、黒 = black
+ちゃいろ、茶色 = brown
+むらさき、紫 = purple
+ぴんく = pink
+はいいろ、灰色 = gray
+きん、金 = gold
+ぎん、銀 = silver
+
+# ===== 数 =====
+かず、数 = number
+ぜろ、零、0 = zero
+いち、一、1 = one
+に、二、2 = two
+さん、三、3 = three
+よん、し、四、4 = four
+ご、五、5 = five
+ろく、六、6 = six
+はち、八、8 = eight
+きゅう、九、9 = nine
+じゅう、十、10 = ten
+ひゃく、百 = hundred
+せん、千 = thousand
+まん、万 = ten thousand
+はんぶん、半分 = half
+
+# ===== 学校・仕事 =====
+べんきょう、勉強 = study
+しゅくだい、宿題 = homework
+しけん、試験 = exam
+もんだい、問題 = problem
+こたえ、答え = answer
+しつもん、質問 = question
+ことば、言葉 = word
+もじ、文字 = letter
+すうがく、数学 = math
+りか、理科 = science
+おんがく、音楽 = music
+びじゅつ、美術 = art
+たいいく、体育 = gym
+きょうしつ、教室 = classroom
+しごと、仕事 = work
+ゆめ、夢 = dream
+もくひょう、目標 = goal
+けいかく、計画 = plan
+やくそく、約束 = promise
+ひみつ、秘密 = secret
+なぞ、謎 = mystery
+こたえあわせ、答え合わせ = check
+じしょ = check
+
+# ===== 動作 =====
+みる、見る = see
+きく、聞く = listen
+はなす、話す = speak
+よむ、読む = read
+かく、書く = write
+たべる、食べる = eat
+のむ、飲む = drink
+ねる、寝る = sleep
+おきる、起きる = wake
+あるく、歩く = walk
+はしる、走る = run
+とぶ、飛ぶ = fly
+およぐ、泳ぐ = swim
+すわる、座る = sit
+たつ、立つ = stand
+わらう、笑う = laugh
+なく、泣く = cry
+おこる、怒る = angry
+かんがえる、考える = think
+おぼえる、覚える = remember
+わすれる、忘れる = forget
+おしえる、教える = teach
+ならう、習う = learn
+つくる、作る = make
+こわす、壊す = break
+なおす、直す = fix
+かう、買う = buy
+うる、売る = sell
+あげる = give
+もらう = receive
+まつ、待つ = wait
+さがす、探す = search
+みつける、見つける = find
+はこぶ、運ぶ = carry
+おす、押す = push
+ひく、引く = pull
+なげる、投げる = throw
+うたう、歌う = sing
+おどる、踊る = dance
+あそぶ、遊ぶ = play
+はたらく、働く = work
+やすむ、休む = rest
+いく、行く = go
+くる、来る = come
+かえる、帰る = return
+とまる、止まる = stop
+うごく、動く = move
+はじめる、始める = start
+おわる、終わる = finish
+まもる、守る = protect
+たすける、助ける = help
+えらぶ、選ぶ = choose
+きめる、決める = decide
+しる、知る = know
+
+# ===== 様子・気持ち =====
+おおきい、大きい = big
+ちいさい、小さい = small
+ながい、長い = long
+みじかい、短い = short
+たかい、高い = high
+ひくい、低い = low
+あたらしい、新しい = new
+ふるい、古い = old
+はやい、速い = fast
+おそい、遅い = slow
+つよい、強い = strong
+よわい、弱い = weak
+あつい、暑い = hot
+さむい、寒い = cold
+あかるい、明るい = bright
+くらい、暗い = dark
+おもい、重い = heavy
+かるい、軽い = light
+ひろい、広い = wide
+せまい、狭い = narrow
+うつくしい、美しい = beautiful
+かわいい、可愛い = cute
+たのしい、楽しい = fun
+うれしい、嬉しい = happy
+かなしい、悲しい = sad
+こわい、怖い = scary
+おもしろい、面白い = interesting
+むずかしい、難しい = difficult
+やさしい、優しい = kind
+しずか、静か = quiet
+うるさい = noisy
+きれい、綺麗 = clean
+きたない、汚い = dirty
+あぶない、危ない = dangerous
+あんぜん、安全 = safe
+しあわせ、幸せ = happiness
+げんき、元気 = healthy
+`;
+
+/* 入力ゆれの吸収：全角→半角、カタカナ→ひらがな、空白や記号を除去して比較する */
+function normalizeJa(str){
+  if (!str) return "";
+  return str
+    .normalize("NFKC")                                   // 全角英数・半角カナなどを統一
+    .replace(/[\u30a1-\u30f6]/g, c =>                    // カタカナ → ひらがな
+      String.fromCharCode(c.charCodeAt(0) - 0x60))
+    .replace(/[ー－―‐]/g, "ー")                          // 長音記号のゆれを統一
+    .replace(/[\s　]/g, "")                              // 空白を除去
+    .replace(/[。、．，・！？!?.]/g, "")                  // 句読点を除去
+    .toLowerCase()
+    .trim();
+}
+
+/* DICT_TEXT を読み取って検索表を作る（1行ずつ「日本語 = english」）*/
+const LOOKUP = {};
+function addDictLine(line){
+  const body = line.split("#")[0].trim();          // # 以降はコメント
+  if (!body) return;
+  const m = body.match(/^(.+?)\s*[=＝:：\t]\s*(.+)$/);
+  if (!m) return;
+  const en = m[2].trim();
+  if (!en) return;
+  for (const jp of m[1].split(/[、,，\/／・]/)) {   // 読みが複数ならまとめて登録
+    const key = normalizeJa(jp);
+    if (key) LOOKUP[key] = en;
+  }
+}
+DICT_TEXT.split("\n").forEach(addDictLine);
+
+const trInput  = $("tr-input");
+const trResult = $("tr-result");
+const trTiles  = $("tr-tiles");
+const trHint   = $("tr-hint");
+const trGo     = $("tr-go");
+let translating = false;
+let kbdFinalize = null;   // タッチキーボードが未確定ローマ字を確定させるフック
+
+function translate(){
+  if (translating) return;
+  if (kbdFinalize) kbdFinalize();   // 末尾の未確定分（n など）を確定してから読む
+  const raw = trInput.value;
+  const key = normalizeJa(raw);
+
+  trTiles.innerHTML = "";
+  trResult.classList.remove("err");
+  trHint.style.display = "none";
+
+  if (!key) {
+    trHint.textContent = "INPUT WORD";
+    trHint.style.display = "block";
+    return;
+  }
+
+  translating = true;
+  trGo.disabled = true;
+  trResult.classList.add("scanning");           // 走査アニメーション
+
+  setTimeout(() => {
+    trResult.classList.remove("scanning");
+    translating = false;
+    trGo.disabled = false;
+
+    const en = LOOKUP[key];
+    if (en) {
+      [...en].forEach((ch, i) => {
+        const t = document.createElement("span");
+        t.className = "tr-tile";
+        t.style.animationDelay = (i * 0.07) + "s";  // 1文字ずつ点灯
+        t.textContent = ch;
+        trTiles.appendChild(t);
+      });
+    } else {
+      trResult.classList.add("err");            // 解答に関係ない語句 → error
+    }
+  }, REDUCED ? 0 : 620);
+}
+trGo.addEventListener("click", translate);
+trInput.addEventListener("keydown", e => { if (e.key === "Enter") translate(); });
+
+/* ================================================================
+   タッチキーボード（翻訳用・ローマ字入力）
+   QWERTYキーを打つとローマ字→ひらがなに自動変換して入力欄に表示。
+   変換途中のローマ字（子音など）はそのまま末尾に表示され、
+   続きを打つとかなに変わる（IMEと同じ挙動）。
+   例）t → 「t」/ to → 「と」/ kya → 「きゃ」/ kitte → 「きって」
+   ================================================================ */
+(function buildKeyboard(){
+  /* ローマ字→ひらがな 変換表（最長一致。ヘボン式・訓令式の両方に対応） */
+  const ROMAJI = {
+    a:"あ", i:"い", u:"う", e:"え", o:"お",
+    ka:"か", ki:"き", ku:"く", ke:"け", ko:"こ",
+    sa:"さ", si:"し", su:"す", se:"せ", so:"そ",
+    ta:"た", ti:"ち", tu:"つ", te:"て", to:"と",
+    na:"な", ni:"に", nu:"ぬ", ne:"ね", no:"の",
+    ha:"は", hi:"ひ", hu:"ふ", he:"へ", ho:"ほ",
+    ma:"ま", mi:"み", mu:"む", me:"め", mo:"も",
+    ya:"や", yu:"ゆ", yo:"よ",
+    ra:"ら", ri:"り", ru:"る", re:"れ", ro:"ろ",
+    wa:"わ", wo:"を", wi:"うぃ", we:"うぇ",
+    ga:"が", gi:"ぎ", gu:"ぐ", ge:"げ", go:"ご",
+    za:"ざ", zi:"じ", zu:"ず", ze:"ぜ", zo:"ぞ",
+    da:"だ", di:"ぢ", du:"づ", de:"で", do:"ど",
+    ba:"ば", bi:"び", bu:"ぶ", be:"べ", bo:"ぼ",
+    pa:"ぱ", pi:"ぴ", pu:"ぷ", pe:"ぺ", po:"ぽ",
+    fa:"ふぁ", fi:"ふぃ", fu:"ふ", fe:"ふぇ", fo:"ふぉ",
+    va:"ゔぁ", vi:"ゔぃ", vu:"ゔ", ve:"ゔぇ", vo:"ゔぉ",
+    kya:"きゃ", kyu:"きゅ", kyo:"きょ",
+    gya:"ぎゃ", gyu:"ぎゅ", gyo:"ぎょ",
+    sha:"しゃ", shi:"し", shu:"しゅ", she:"しぇ", sho:"しょ",
+    sya:"しゃ", syu:"しゅ", syo:"しょ",
+    ja:"じゃ", ji:"じ", ju:"じゅ", je:"じぇ", jo:"じょ",
+    jya:"じゃ", jyu:"じゅ", jyo:"じょ",
+    zya:"じゃ", zyu:"じゅ", zyo:"じょ",
+    cha:"ちゃ", chi:"ち", chu:"ちゅ", che:"ちぇ", cho:"ちょ",
+    tya:"ちゃ", tyu:"ちゅ", tyo:"ちょ",
+    tsu:"つ",
+    nya:"にゃ", nyu:"にゅ", nyo:"にょ",
+    hya:"ひゃ", hyu:"ひゅ", hyo:"ひょ",
+    bya:"びゃ", byu:"びゅ", byo:"びょ",
+    pya:"ぴゃ", pyu:"ぴゅ", pyo:"ぴょ",
+    mya:"みゃ", myu:"みゅ", myo:"みょ",
+    rya:"りゃ", ryu:"りゅ", ryo:"りょ",
+    la:"ぁ", li:"ぃ", lu:"ぅ", le:"ぇ", lo:"ぉ",
+    xa:"ぁ", xi:"ぃ", xu:"ぅ", xe:"ぇ", xo:"ぉ",
+    lya:"ゃ", lyu:"ゅ", lyo:"ょ", xya:"ゃ", xyu:"ゅ", xyo:"ょ",
+    ltu:"っ", xtu:"っ", ltsu:"っ",
+    lwa:"ゎ", xwa:"ゎ",
+  };
+  const ROMAJI_KEYS = Object.keys(ROMAJI);
+  const VOWELS = "aiueo";
+
+  /* pend（未確定ローマ字）を先頭からかなに変換できるだけ変換する */
+  function convert(pend){
+    let out = "";
+    outer: while (pend) {
+      // 「ん」の判定
+      if (pend[0] === "n") {
+        if (pend.length < 2) break;                     // n 単独 → 続きを待つ（翻訳時は「ん」に確定）
+        if (pend[1] === "n" || pend[1] === "'") {       // nn / n' → 即「ん」（一般的なIMEと同じ）
+          out += "ん"; pend = pend.slice(2); continue;  // ※「おんな」は onnna か on'na で入力
+        }
+        if (!(VOWELS + "y").includes(pend[1])) { out += "ん"; pend = pend.slice(1); continue; }
+      }
+      // 促音「っ」（子音の連続。tch も っ+ch 扱い）
+      if (pend.length >= 2 && !(VOWELS + "n").includes(pend[0]) &&
+          (pend[0] === pend[1] || (pend[0] === "t" && pend[1] === "c"))) {
+        out += "っ"; pend = pend.slice(1); continue;
+      }
+      // 変換表の最長一致（4〜1文字）
+      for (let L = Math.min(4, pend.length); L >= 1; L--) {
+        const k = pend.slice(0, L);
+        if (ROMAJI[k]) { out += ROMAJI[k]; pend = pend.slice(L); continue outer; }
+      }
+      // まだ何かの途中なら待つ（例: "ky" "ts" "sh"）
+      if (ROMAJI_KEYS.some(k => k.startsWith(pend))) break;
+      // どの語にも繋がらない → 先頭1文字を捨てる
+      pend = pend.slice(1);
+    }
+    return [out, pend];
+  }
+
+  let kana = "", pend = "";
+  function renderField(){ trInput.value = kana + pend; }
+  function finalizePend(){
+    if (pend === "n") kana += "ん";   // 末尾の n は「ん」に確定
+    pend = "";
+  }
+  /* 翻訳実行前に未確定分を確定させる（translate() 冒頭から呼ばれる） */
+  kbdFinalize = () => { finalizePend(); renderField(); };
+
+  /* 物理キーボードで直接編集された場合は、その内容を確定済みとして同期 */
+  trInput.addEventListener("input", () => { kana = trInput.value; pend = ""; });
+
+  /* ---- キーの生成 ---- */
+  const num = $("kbd-num");
+  for (const ch of "1234567890") {
+    const b = document.createElement("button");
+    b.className = "kbd-key"; b.textContent = ch; b.dataset.digit = ch;
+    num.appendChild(b);
+  }
+  document.querySelectorAll("#kbd .kbd-row[data-keys]").forEach(row => {
+    for (const ch of row.dataset.keys) {
+      const b = document.createElement("button");
+      b.className = "kbd-key"; b.textContent = ch; b.dataset.letter = ch;
+      row.appendChild(b);
+    }
+    if (row.dataset.extra === "bs") {
+      const b = document.createElement("button");
+      b.className = "kbd-key bs"; b.textContent = "⌫"; b.id = "kbd-bs";
+      b.title = "1文字削除";
+      row.appendChild(b);
+    }
+  });
+
+  /* ---- 入力処理 ---- */
+  $("kbd").addEventListener("click", e => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    sfx(720, 0.045);
+    if (b.dataset.letter) {
+      pend += b.dataset.letter;
+      const [out, rest] = convert(pend);
+      kana += out; pend = rest;
+    } else if (b.dataset.digit) {
+      finalizePend();
+      kana += b.dataset.digit;
+    } else if (b.dataset.ch) {              // 「ー」
+      finalizePend();
+      kana += b.dataset.ch;
+    } else if (b.id === "kbd-bs") {
+      if (pend) pend = pend.slice(0, -1);
+      else kana = kana.slice(0, -1);
+    } else if (b.id === "kbd-clear") {
+      kana = ""; pend = "";
+    } else if (b.id === "kbd-go") {
+      translate();                          // translate() 側で kbdFinalize が走る
+      return;
+    }
+    renderField();
+  });
+})();
+
+/* ================================================================
+   時計（赤文字・通常書体のデジタル時計）
+   ※数字は一般的な書体（カクカクの7セグではない）を赤で表示
+   ※「0」だけは丸＋斜線（🚫型）で描く——STEP裏の仕掛け
+   ================================================================ */
+const CLOCK_RED     = "var(--clock-ink)";        // 数字の色（配色モードに追従。基準色は CSS の --clock-ink）
+const CLOCK_RED_DIM = "rgba(255,82,82,.16)";     // コロン消灯時の色
+const CLOCK_FONT    = "'NyashiKai2','Segoe UI','Yu Gothic UI','Meiryo',sans-serif";   // にゃしぃフォント改二（nyashi-kai2.ttf を同梱）
+
+function digitSVG(ch, cx, scale = 1){
+  // すべての数字をフォントの字形そのままで描画。
+  // 「0」の斜線（🚫型）はフォント側が持っているため、上書き描画はしない。
+  const size = Math.round(118 * scale);
+  const op = scale < 1 ? ' opacity="0.72"' : '';   // 秒は少し淡く
+  return `<text x="${cx}" y="120" text-anchor="middle" font-size="${size}" font-weight="700"
+      font-family="${CLOCK_FONT}" fill="${CLOCK_RED}"${op}>${ch}</text>`;
+}
+function dotSVG(cx, scale = 1){
+  // 秒の左は点滅しない「.」（ピリオド）で控えめに区切る
+  const r = (7 * scale).toFixed(1);
+  return `<circle cx="${cx}" cy="${(120 - 12 * scale).toFixed(1)}" r="${r}" fill="${CLOCK_RED}" opacity="0.72"/>`;
+}
+function colonSVG(cx, visible, scale = 1){
+  const f = visible ? CLOCK_RED : CLOCK_RED_DIM;
+  const r  = (9 * scale).toFixed(1);
+  const y1 = (120 - 64 * scale).toFixed(1);
+  const y2 = (120 - 20 * scale).toFixed(1);
+  const op = scale < 1 ? ' opacity="0.72"' : '';
+  return `<circle cx="${cx}" cy="${y1}" r="${r}" fill="${f}"${op}/>
+          <circle cx="${cx}" cy="${y2}" r="${r}" fill="${f}"${op}/>`;
+}
+
+/* 時刻の供給
+   初期状態：作中時刻 19:30 から進行（作中公演は 19:30〜20:00）
+   Ctrl + Shift 同時押しでいつでも 19:30 にリセット
+   運営用パネル（ロゴ長押し）で任意時刻にも変更可能 */
+const SHOW_START = { h: 19, m: 30 };           // 作中公演の開始前時刻
+const CLOCK_DATE_TEXT = "08.30 SUN";           // 日付は 8/30 固定（曜日表記は自由に変更可）
+
+let clockMode = "manual";     // "real" | "manual"
+let clockStarted = false;     // 最初にホーム画面が開いた瞬間から進み始める
+let manualBase  = Date.now();
+let manualStart = (SHOW_START.h * 3600 + SHOW_START.m * 60) * 1000;
+
+/* 初回のみ：時計の進行を開始（起動モーション完了＝ホーム表示時に呼ばれる） */
+function startShowClock(){
+  if (clockStarted) return;
+  clockStarted = true;
+  manualBase = Date.now();
+}
+
+function currentTime(){
+  if (clockMode === "real") {
+    const d = new Date();
+    return { h: d.getHours(), m: d.getMinutes(), s: d.getSeconds() };
+  }
+  const elapsed = clockStarted ? (Date.now() - manualBase) : 0;   // 開始前は19:30で静止
+  const total = (manualStart + elapsed) % 86400000;
+  const h = Math.floor(total / 3600000);
+  const m = Math.floor((total % 3600000) / 60000);
+  const s = Math.floor((total % 60000) / 1000);
+  return { h, m, s };
+}
+
+const clockSVG  = $("clock-svg");
+const clockDate = $("clock-date");
+const homeClockSVG  = $("home-clock-svg");
+const homeClockDate = $("home-clock-date");
+clockDate.textContent = CLOCK_DATE_TEXT;
+homeClockDate.textContent = CLOCK_DATE_TEXT;
+
+// 桁の中心X座標: H H : M M : S S（viewBox 700 × 160）
+// 秒（末尾3つ）は小さめに描いて主張を弱める
+const CLOCK_SLOTS  = [70, 175, 260, 345, 450, 520, 568, 633];
+const CLOCK_SEC_AT = 5;      // このインデックス以降を小さく描く
+const CLOCK_SEC_SC = 0.62;   // 秒の縮小率
+
+function renderClock(){
+  const t = currentTime();
+  const hh = String(t.h).padStart(2,"0");
+  const mm = String(t.m).padStart(2,"0");
+  const blink = (t.s % 2) === 0;   // 秒は表示しないがコロン点滅に使用
+
+  const ss = String(t.s).padStart(2,"0");
+  const str = hh + ":" + mm + ":" + ss;
+  let svg = "";
+  [...str].forEach((ch, i) => {
+    const sc = (i >= CLOCK_SEC_AT) ? CLOCK_SEC_SC : 1;   // 秒だけ小さく
+    if (ch === ":") {
+      // 分と秒の区切り（i=5）は点滅しない「.」、時と分の区切りは点滅するコロン
+      svg += (i === CLOCK_SEC_AT) ? dotSVG(CLOCK_SLOTS[i], sc) : colonSVG(CLOCK_SLOTS[i], blink, sc);
+    } else {
+      svg += digitSVG(ch, CLOCK_SLOTS[i], sc);
+    }
+  });
+  clockSVG.innerHTML = svg;
+  homeClockSVG.innerHTML = svg;   // ホームのウィジェットにも同じ表示（0の🚫も同一）
+}
+setInterval(renderClock, 250);
+renderClock();
+
+/* Ctrl + Shift → 作中時刻 19:30 にリセット */
+function resetShowTime(){
+  clockMode   = "manual";
+  clockStarted = true;   // リセット＝その瞬間から19:30で再スタート
+  manualStart = (SHOW_START.h * 3600 + SHOW_START.m * 60) * 1000;
+  manualBase  = Date.now();
+  renderClock();
+  showToast("TIME RESET → 19:30");
+}
+document.addEventListener("keydown", e => {
+  if (e.repeat) return;
+  if ((e.key === "Shift" && e.ctrlKey) || (e.key === "Control" && e.shiftKey)) {
+    e.preventDefault();
+    resetShowTime();
+  }
+});
+
+/* トースト通知 */
+let toastTimer = null;
+function showToast(msg){
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 1500);
+}
+
+/* ================================================================
+   ブースの見取り図（座標は viewBox 800×520 基準・自由に調整できます）
+   ・部屋の上の壁に入口。左側に「置かれるイラスト」の一覧を書き出す
+   ・右半分に机が2つ。左の机＝カメラ①②と鏡、右の机＝金庫
+   ================================================================ */
+const MAP_ROOM = { x:24, y:26, w:752, h:468 };          // 部屋の外壁
+const MAP_DOOR = { x1:140, x2:290 };                    // 上の壁にあける入口の範囲
+const MAP_DESKS = [                                     // 机（長方形）
+  { x:352, y:150, w:200, h:296 },
+  { x:586, y:150, w:172, h:296 },
+];
+/* 置かれるイラスト（英語 ― 日本語）。行を足し引きするだけで一覧に反映されます */
+const MAP_ILLUSTS = [
+  { en:"Bear",  jp:"クマ" },
+  { en:"Clap",  jp:"はくしゅ" },
+  { en:"Eco",   jp:"エコ" },
+  { en:"Mop",   jp:"モップ" },
+  { en:"Stop",  jp:"ストップ" },
+  { en:"Net",   jp:"あみ" },
+  { en:"Hunt",  jp:"かり" },
+  { en:"Pen",   jp:"ペン" },
+  { en:"Fact",  jp:"じじつ" },
+  { en:"Lion",  jp:"ライオン" },
+  { en:"Stick", jp:"ぼう" },
+  { en:"Train", jp:"でんしゃ" },
+];
+/* 部屋に置かれている設備 */
+const MAP_ITEMS = [
+  { type:"camera", label:"カメラ①", x:470, y:222 },
+  { type:"camera", label:"カメラ②", x:470, y:372 },
+  { type:"mirror", label:"鏡",       x:378, y:300 },
+  { type:"safe",   label:"金庫",     x:672, y:222 },
+];
+
+/* ================================================================
+   マップ描画（開くたびに描き込みアニメーション）
+   ================================================================ */
+function drawMap(animate){
+  const svg = $("map-svg");
+  const C = { camera:"#8fa8ff", illust:"#f5b562", mirror:"#9db7ff", safe:"#8fa8ff", item:"#5d6b8c" };
+  const GRID = "rgba(150,178,255,.07)";
+  const MONO = "'Cascadia Mono','Consolas','Courier New',monospace";
+  const R = MAP_ROOM;
+  let s = "";
+
+  // 方眼（ブループリント風）
+  for (let x = 30; x <= 770; x += 37) s += `<line x1="${x}" y1="30" x2="${x}" y2="490" stroke="${GRID}"/>`;
+  for (let y = 30; y <= 490; y += 37) s += `<line x1="30" y1="${y}" x2="770" y2="${y}" stroke="${GRID}"/>`;
+
+  // ブースの外壁（上の壁だけ入口ぶんを空ける／描き込みアニメ対象）
+  const rx = R.x, ry = R.y, rr = R.x + R.w, rb = R.y + R.h;
+  s += `<path class="wall" pathLength="100"
+          d="M${rx},${ry} H${MAP_DOOR.x1} M${MAP_DOOR.x2},${ry} H${rr} V${rb} H${rx} V${ry}"
+          fill="none" stroke="#9db7ff" stroke-width="3.5" stroke-linejoin="round"/>`;
+
+  // 入口
+  s += `<g class="pop" style="animation-delay:.85s">
+          <line x1="${MAP_DOOR.x1}" y1="${ry}" x2="${MAP_DOOR.x2}" y2="${ry}"
+                stroke="#f5b562" stroke-width="2" stroke-dasharray="7 6"/>
+          <text x="${(MAP_DOOR.x1 + MAP_DOOR.x2) / 2}" y="${ry - 10}" text-anchor="middle"
+                font-size="15" fill="#8fa0c4" letter-spacing="4">入口</text>
+        </g>`;
+
+  // 置かれるイラストの一覧（左側に書き出す）
+  const LX = 62, LY = 112;
+  let list = `<text x="${LX}" y="${LY - 34}" font-size="15" fill="#e8efff" letter-spacing="3">置かれるイラスト</text>
+              <line x1="${LX}" y1="${LY - 22}" x2="${LX + 196}" y2="${LY - 22}" stroke="rgba(245,181,98,.45)"/>`;
+  MAP_ILLUSTS.forEach((it, i) => {
+    const y = LY + i * 27;
+    list += `<circle cx="${LX + 5}" cy="${y - 5}" r="4" fill="#f5b562" opacity=".85"/>
+             <text x="${LX + 20}" y="${y}" font-size="14" fill="#e8efff">
+               <tspan font-family="${MONO}" fill="#f5b562">${it.en}</tspan>
+               <tspan fill="#8fa0c4"> ─ </tspan>${it.jp}</text>`;
+  });
+  s += `<g class="pop" style="animation-delay:1.05s">${list}</g>`;
+
+  // 机
+  MAP_DESKS.forEach((d, i) => {
+    s += `<g class="pop" style="animation-delay:${(0.95 + i * 0.1).toFixed(2)}s">
+            <rect x="${d.x}" y="${d.y}" width="${d.w}" height="${d.h}" rx="8"
+                  fill="rgba(150,178,255,.05)" stroke="#5d6b8c" stroke-width="2"/>
+            <text x="${d.x + 12}" y="${d.y + d.h - 12}" font-size="13"
+                  fill="#8fa0c4" letter-spacing="3">机</text>
+          </g>`;
+  });
+
+  // 設備（カメラ・鏡・金庫）
+  // 注意：配置(translate)は外側のg、アニメ(.pop)は内側のgに分離すること。
+  // 同じ要素に載せると、CSSアニメの transform が translate 属性を上書きして
+  // 全アイテムが左上(原点)に集まってしまう。
+  MAP_ITEMS.forEach((it, idx) => {
+    const c = C[it.type] || "#5d6b8c";
+    const delay = (1.2 + idx * 0.1).toFixed(2);
+    let inner = "";
+    if (it.type === "camera") {
+      inner = `
+        <rect x="-46" y="-38" width="92" height="76" rx="9"
+              fill="rgba(143,168,255,.16)" stroke="${c}" stroke-width="2"/>
+        <circle cx="0" cy="-4" r="13" fill="none" stroke="${c}" stroke-width="2.5"/>
+        <circle cx="0" cy="-4" r="4.5" fill="${c}"/>
+        <text x="0" y="26" text-anchor="middle" font-size="14" fill="#e8efff" font-weight="bold">${it.label}</text>`;
+    } else if (it.type === "safe") {
+      inner = `
+        <rect x="-48" y="-46" width="96" height="92" rx="7"
+              fill="rgba(143,168,255,.18)" stroke="${c}" stroke-width="2.5"/>
+        <circle cx="6" cy="0" r="15" fill="none" stroke="${c}" stroke-width="3"/>
+        <line x1="6" y1="-15" x2="6" y2="15" stroke="${c}" stroke-width="3"/>
+        <line x1="-9" y1="0" x2="21" y2="0" stroke="${c}" stroke-width="3"/>
+        <rect x="-42" y="-34" width="5" height="14" rx="2" fill="${c}" opacity=".7"/>
+        <rect x="-42" y="20" width="5" height="14" rx="2" fill="${c}" opacity=".7"/>
+        <text x="0" y="66" text-anchor="middle" font-size="16" fill="#e8efff" font-weight="bold" letter-spacing="3">${it.label}</text>`;
+    } else if (it.type === "mirror") {
+      inner = `
+        <rect x="-7" y="-46" width="14" height="92" rx="3"
+              fill="rgba(157,183,255,.35)" stroke="${c}" stroke-width="2"/>
+        <text x="0" y="-56" text-anchor="middle" font-size="13" fill="#e8efff">${it.label}</text>`;
+    } else {
+      inner = `
+        <rect x="-24" y="-16" width="48" height="32" rx="4" fill="none"
+              stroke="${c}" stroke-width="2" stroke-dasharray="5 4"/>
+        <text x="0" y="34" text-anchor="middle" font-size="13" fill="#8fa0c4">${it.label}</text>`;
+    }
+    s += `<g transform="translate(${it.x},${it.y})"><g class="pop" style="animation-delay:${delay}s">${inner}</g></g>`;
+  });
+
+  svg.innerHTML = s;
+  svg.classList.remove("draw");
+  if (animate && !REDUCED) { void svg.getBoundingClientRect(); svg.classList.add("draw"); }
+}
+drawMap(false);
+
+/* ================================================================
+   運営用パネル（ロゴ長押し 約2秒）
+   ================================================================ */
+const staff = $("staff");
+let pressTimer = null, staffOpened = false;
+function startPress(){
+  staffOpened = false;
+  pressTimer = setTimeout(() => { staff.classList.add("open"); staffOpened = true; }, 2000);
+}
+function cancelPress(){ clearTimeout(pressTimer); }
+$("logo").addEventListener("mousedown", startPress);
+$("logo").addEventListener("touchstart", startPress, {passive:true});
+["mouseup","mouseleave","touchend","touchcancel"].forEach(ev => $("logo").addEventListener(ev, cancelPress));
+
+/* 短いクリック → 起動モーションを再生してホームへ（長押しで開いた直後は発火させない） */
+$("logo").addEventListener("click", () => {
+  if (staffOpened || staff.classList.contains("open")) { staffOpened = false; return; }
+  playBoot();
+});
+
+$("staff-close").addEventListener("click", () => staff.classList.remove("open"));
+
+/* リロード後の復旧用：進行状態に合わせて手動で戻す */
+$("staff-show-clock").addEventListener("click", () => { revealClockCard(); showToast("時計のロックを解除しました"); });
+$("staff-unlock-cmd").addEventListener("click", () => { unlockCommandMode(); });
+
+/* 全画面の解除／再開（押した瞬間に切り替わる） */
+$("staff-fs-btn").addEventListener("click", () => {
+  if (keepFullscreen) {
+    keepFullscreen = false;                     // タッチによる自動復帰も停止
+    if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+    $("staff-fs-btn").textContent = "全画面にする";
+  } else {
+    keepFullscreen = true;
+    enterFS();                                  // クリック＝ユーザー操作なのでここで全画面化できる
+    $("staff-fs-btn").textContent = "全画面を解除する";
+  }
+});
+$("staff-apply").addEventListener("click", () => {
+  const [h, m] = $("staff-time").value.split(":").map(Number);
+  manualStart = (h * 3600 + m * 60) * 1000;
+  manualBase  = Date.now();
+  clockMode = "manual";
+  clockStarted = true;
+  staff.classList.remove("open");
+  renderClock();
+});
+
+
+/* ================================================================
+   画面切替（タップ位置から円形に展開）
+   ================================================================ */
+const screens = document.querySelectorAll(".screen");
+
+function openApp(id, cx, cy){
+  screens.forEach(s => s.classList.remove("active", "entering"));
+  const scr = $(id);
+  scr.classList.add("active", "entering");
+  scr.scrollTop = 0;
+
+  if (!REDUCED && cx != null) {
+    const rect = scr.getBoundingClientRect();
+    const x = cx - rect.left, y = cy - rect.top;
+    scr.style.transition = "none";
+    scr.style.clipPath = `circle(0px at ${x}px ${y}px)`;
+    void scr.offsetWidth;                       // reflow
+    scr.style.transition = "clip-path .5s cubic-bezier(.25,.85,.3,1)";
+    scr.style.clipPath = `circle(160vmax at ${x}px ${y}px)`;
+    setTimeout(() => { scr.style.clipPath = ""; scr.style.transition = ""; }, 560);
+  }
+  setTimeout(() => scr.classList.remove("entering"), 1100);
+
+  if (id === "app-map") drawMap(true);
+}
+
+function goHome(fromScr){
+  hideClockOn();               // CLOCK ON の表示はホームに戻るまで
+  fromScr.classList.add("leaving");
+  setTimeout(() => {
+    fromScr.classList.remove("active", "leaving");
+    const home = $("home");
+    home.classList.add("active", "entering");
+    startShowClock();          // 初回ホーム表示から時計が進み始める
+    setTimeout(() => home.classList.remove("entering"), 1100);
+  }, REDUCED ? 0 : 165);
+}
+
+document.querySelectorAll("[data-open]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const target = btn.dataset.open;
+    if (target === "home") {
+      goHome(btn.closest(".screen"));
+    } else {
+      // ロック中の時計カードは開かない（揺れて拒否）
+      if (btn.id === "home-clock" && btn.classList.contains("locked")) {
+        btn.classList.remove("shake"); void btn.offsetWidth; btn.classList.add("shake");
+        return;
+      }
+      // ホームの機能カードなら点灯を付け替える（最後に開いたカードが光り続ける）
+      if (btn.classList.contains("fn-card")) {
+        document.querySelectorAll(".fn-card.lit").forEach(c => c.classList.remove("lit"));
+        btn.classList.add("lit");
+      }
+      sfx(680, 0.06);
+      if (target === "app-clock") $("home-clock").classList.remove("notify");   // 確認したら明滅停止
+      const r = btn.getBoundingClientRect();
+      openApp(target, r.left + r.width / 2, r.top + r.height / 2);
+    }
+  });
+});
+
+/* ホーム画面でカード以外の場所をタップしたら点灯を消す
+   （アプリ内でのタップは対象外＝アプリを開いて戻ってきても光は残る） */
+document.addEventListener("pointerdown", e => {
+  if ($("home").classList.contains("active") && !e.target.closest(".fn-card")) {
+    document.querySelectorAll(".fn-card.lit").forEach(c => c.classList.remove("lit"));
+  }
+});
+
+/* ホームのティッカー */
+(function ticker(){
+  const msgs = ["SYSTEM READY", "STAGE LINK: OK", "ALL DEVICES: ONLINE"];
+  let i = 0;
+  setInterval(() => {
+    i = (i + 1) % msgs.length;
+    $("ticker-text").textContent = msgs[i];
+  }, 4000);
+})();
+
+/* ================================================================
+   起動シーケンス（待機画面 → 起動モーション → ホーム）
+   ================================================================ */
+const BOOT_TEXT  = "PARALLELS-OS";
+const BOOT_LINES = [
+  ["SYSTEM CHECK ......... OK", 0.70],
+  ["STAGE LINK ........... OK", 1.15],
+  ["READY",                     1.60],
+];
+let bootPlaying = false, bootTimer = null;
+
+function buildBootDom(){
+  const logo = $("boot-logo");
+  logo.innerHTML = "";
+  const dashAt = BOOT_TEXT.indexOf("-");
+  [...BOOT_TEXT].forEach((ch, i) => {
+    const b = document.createElement("b");
+    b.textContent = ch;
+    b.style.animationDelay = (0.15 + i * 0.07) + "s";
+    if (i >= dashAt) b.classList.add("hl");
+    logo.appendChild(b);
+  });
+  const lines = $("boot-lines");
+  lines.innerHTML = "";
+  for (const [txt, delay] of BOOT_LINES) {
+    const d = document.createElement("div");
+    d.textContent = txt;
+    d.style.animationDelay = delay + "s";
+    lines.appendChild(d);
+  }
+}
+
+const bootEl = $("boot");
+
+function playBoot(){
+  if (bootPlaying) return;
+  bootPlaying = true;
+  buildBootDom();
+  bootEl.classList.remove("done");
+  bootEl.style.display = "";
+  void bootEl.offsetWidth;
+  bootEl.classList.add("playing");
+  clearTimeout(bootTimer);
+  bootTimer = setTimeout(finishBoot, REDUCED ? 0 : 2600);
+}
+
+function finishBoot(){
+  if (!bootPlaying) return;
+  clearTimeout(bootTimer);
+  bootEl.classList.add("done");
+  setTimeout(() => {
+    bootEl.style.display = "none";      // フェード後に隠してから .playing を外す
+    bootEl.classList.remove("playing", "done");
+    bootPlaying = false;
+  }, REDUCED ? 0 : 520);
+
+  // どの画面からでもホームへ戻す
+  screens.forEach(s => s.classList.remove("active", "entering", "leaving"));
+  const home = $("home");
+  home.classList.add("active", "entering");
+  startShowClock();
+  setTimeout(() => home.classList.remove("entering"), 1200);
+}
+
+bootEl.addEventListener("click", () => {
+  if (bootPlaying) finishBoot();   // 再生中 → スキップ
+  else playBoot();                 // 待機中 → 起動モーション開始
+});
+
+/* ================================================================
+   全画面表示の維持
+   ================================================================ */
+let keepFullscreen = true;
+function enterFS(){
+  if (document.fullscreenElement) return;
+  const el = document.documentElement;
+  (el.requestFullscreen ? el.requestFullscreen({ navigationUI:"hide" }) : Promise.reject())
+    .catch(()=>{});
+}
+/* 解除されても次のタッチで自動復帰（運営パネルから止められる） */
+document.addEventListener("pointerdown", () => { if (keepFullscreen) enterFS(); });
+
+/* 画面端からのスワイプ・ピンチを抑止（ステータスバーは除外：RESTARTを効かせるため） */
+document.addEventListener("touchstart", e => {
+  if (e.target.closest("#statusbar")) return;
+  const t = e.touches[0];
+  if (t && (t.clientX < 28 || t.clientX > window.innerWidth - 28)) e.preventDefault();
+  if (e.touches.length > 1) e.preventDefault();
+}, { passive:false });
+document.addEventListener("gesturestart", e => e.preventDefault());
+
+/* ================================================================
+   音声（音量は設定のスライダーで変更）
+   - hiphop コマンド：同フォルダの hiphop.aac をループ再生（リセットで停止）
+   - hear   コマンド：以降のタップ操作に効果音（WebAudio生成・ファイル不要）
+   ================================================================ */
+let AUDIO_VOL = 0.85;            // 音楽の音量
+let SFX_GAIN  = 0.12;            // 効果音の音量（音量に連動）
+let bgm = null, audioCtx = null, sfxOn = false;
+
+function playHiphop(){
+  try {
+    bgm = bgm || new Audio("hiphop.aac");
+    bgm.loop = true;                 // リセットするまで繰り返す
+    bgm.volume = AUDIO_VOL;
+    bgm.currentTime = 0;
+    bgm.play().catch(()=>{});
+  } catch(e){}
+}
+function stopHiphop(){
+  if (!bgm) return;
+  try { bgm.pause(); bgm.currentTime = 0; } catch(e){}
+}
+function sfx(freq = 660, dur = 0.06){
+  if (!sfxOn) return;
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = "square"; o.frequency.value = freq;
+    g.gain.value = SFX_GAIN;
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(); o.stop(audioCtx.currentTime + dur);
+  } catch(e){}
+}
+/* 夜間モード（evening）。通常はずっと白背景＝theme-invert */
+function setNightMode(on){
+  document.body.classList.toggle("theme-invert", !on);
+}
+
+/* ================================================================
+   簡易コマンド（STEP3〜）
+   - 解禁：ホームのワードマークを 2.5秒以内に5連続タップ／運営パネル
+   - スロットは「カメラ１」「カメラ２」。ワードは頭文字が消えて合体
+   - 存在しないコマンドは無反応。同じコマンドは何度でも実行できる
+   - ダミーも含め、すべてのコマンドが看板の文字をトグルする
+   ================================================================ */
+const CMD_WORDS = [
+  // 並び順から答えのペアが読めないようにシャッフルしてある
+  { en:"hunt",  jp:"かり" },     { en:"clap",  jp:"はくしゅ" },
+  { en:"gold",  jp:"きんか" },   { en:"car",   jp:"くるま" },
+  { en:"ship",  jp:"ふね" },     { en:"lion",  jp:"ライオン" },
+  { en:"stick", jp:"ぼう" },     { en:"ice",   jp:"こおり" },
+  { en:"seven", jp:"なな" },     { en:"stop",  jp:"ストップ" },
+  { en:"bird",  jp:"とり" },     { en:"eco",   jp:"エコ" },
+  { en:"she",   jp:"かのじょ" }, { en:"net",   jp:"あみ" },
+  { en:"star",  jp:"ほし" },     { en:"fact",  jp:"じじつ" },
+  { en:"train", jp:"でんしゃ" }, { en:"shop",  jp:"みせ" },
+  { en:"moon",  jp:"つき" },     { en:"ring",  jp:"ゆびわ" },
+];
+/* 存在する簡易コマンド（これ以外の組み合わせは「無反応」） */
+const CMD_VALID = {
+  laptop:  { msg:"端末に簡易コマンドリセットボタンが追加された。" },
+  ticket:  { msg:"コマンドの残り使用回数が 1 回増えた。" },
+  count:   { msg:"コマンドの使用回数が表示されるようになった。" },
+  action:  { msg:"画面の下を棒人間が走っていった。" },
+  rain:    { msg:"端末に雨が降りはじめた。" },
+  hiphop:  { msg:"端末から音楽が流れはじめた。" },
+  hear:    { msg:"端末の操作に効果音がつくようになった。" },
+  evening: { msg:"夜間モードに切り替わった。" },
+};
+
+let cmdUnlocked = false;
+let cmdSlot1 = null, cmdSlot2 = null;
+let cmdRuns = 0, cmdCountVisible = false;
+const CMD_LIMIT_INIT = 10;            // 残り使用回数の初期値
+let cmdRemaining = CMD_LIMIT_INIT;
+const usedCommands = new Set();       // 同じコマンドは1回だけ
+const signLit = { u:false, n:false, l:false, o:false, c:false, k:false };
+
+/* --- 解禁（カード04を出す） --- */
+function unlockCommandMode(){
+  if (cmdUnlocked) return;
+  cmdUnlocked = true;
+  const card = $("home-command");
+  card.hidden = false;
+  if (!REDUCED) card.style.animation = "riseIn .6s cubic-bezier(.2,.8,.25,1) both";
+  showToast("COMMAND MODE UNLOCKED");
+}
+
+/* --- 時計カードのロック解除（看板の完成 / 運営パネルの復旧ボタン） --- */
+let clockCardUnlocked = false;
+function revealClockCard(){
+  if (clockCardUnlocked) return;
+  clockCardUnlocked = true;
+  const card = $("home-clock");
+  card.classList.remove("locked");
+  const svg = $("home-clock-svg");
+  if (!REDUCED) {
+    svg.style.animation = "warmflicker .5s steps(3) 1";
+    setTimeout(() => { svg.style.animation = ""; }, 600);
+  }
+}
+/* 追加後：確認するまで NEW バッジと明滅を出し続ける */
+function notifyClock(){
+  $("home-clock").classList.add("notify");
+  showToast("時計が追加されました ─ ホームで確認できます");
+}
+
+(function commandGesture(){
+  // 解禁は「2.5秒以内に5連続タップ」のみ（長押しでは反応しない）
+  const wm = $("home-logo");
+  let taps = 0, tapT = null;
+  wm.addEventListener("click", () => {
+    taps++;
+    clearTimeout(tapT);
+    tapT = setTimeout(() => { taps = 0; }, 2500);
+    if (taps >= 5) { taps = 0; unlockCommandMode(); }
+  });
+})();
+
+/* --- チップ生成と選択 --- */
+(function buildCmdChips(){
+  const wrap = $("cmd-chips");
+  for (const w of CMD_WORDS) {
+    const b = document.createElement("button");
+    b.className = "cmd-chip";
+    b.dataset.en = w.en;
+    b.innerHTML = `<span class="ce">${w.en}</span><span class="cj">${w.jp}</span>`;
+    b.addEventListener("click", () => {
+      sfx(600, 0.05);
+      if (cmdSlot1 === w.en)      { cmdSlot1 = cmdSlot2; cmdSlot2 = null; }
+      else if (cmdSlot2 === w.en) { cmdSlot2 = null; }
+      else if (!cmdSlot1)         { cmdSlot1 = w.en; }
+      else if (!cmdSlot2)         { cmdSlot2 = w.en; }
+      else                        { cmdSlot2 = w.en; }   // 2つ選択済みならカメラ２を入れ替え
+      renderCmdUI();
+    });
+    wrap.appendChild(b);
+  }
+})();
+
+function renderCmdUI(){
+  const jp = en => (CMD_WORDS.find(w => w.en === en) || {}).jp || "";
+  const s1 = $("cmd-slot1"), s2 = $("cmd-slot2");
+  s1.textContent = cmdSlot1 ? `${jp(cmdSlot1)}（${cmdSlot1}）` : "カメラ１";
+  s2.textContent = cmdSlot2 ? `${jp(cmdSlot2)}（${cmdSlot2}）` : "カメラ２";
+  s1.classList.toggle("filled", !!cmdSlot1);
+  s2.classList.toggle("filled", !!cmdSlot2);
+  document.querySelectorAll(".cmd-chip").forEach(c =>
+    c.classList.toggle("sel", c.dataset.en === cmdSlot1 || c.dataset.en === cmdSlot2));
+  $("cmd-runs").textContent = cmdRemaining;
+  $("stat-remain").classList.toggle("low", cmdRemaining <= 3);   // 残りわずかは赤く
+  // 端末の使用回数（count コマンドで表示されるようになる）
+  $("cmd-used").textContent = cmdRuns;
+  $("stat-used").hidden = !cmdCountVisible;
+}
+
+/* 状態が変わらなかった文字を一瞬だけ点滅させる
+   （消灯中なら一瞬光り、点灯中なら一瞬消える） */
+function blinkLetters(chars){
+  if (!chars.length) return;
+  const set = new Set(chars);
+  document.querySelectorAll(".sg").forEach(el => {
+    if (!set.has(el.dataset.ch)) return;
+    el.classList.remove("blink");
+    void el.offsetWidth;
+    el.classList.add("blink");
+    setTimeout(() => el.classList.remove("blink"), 520);
+  });
+}
+
+/* 看板の反映：消灯を先に処理し、SIGN_ON_DELAY 後に点灯を反映する。
+   0 にすると点灯・消灯が同時に切り替わる */
+const SIGN_ON_DELAY = 0;
+let signOnT = null;
+
+function renderSign(){
+  const all = Object.values(signLit).every(v => v);
+  const sgs = document.querySelectorAll(".sg");
+  // 1) 消灯を先に反映
+  sgs.forEach(el => { if (!signLit[el.dataset.ch]) el.classList.remove("on"); });
+  if (!all) $("sign").classList.remove("complete");
+  // 2) 少し遅れて点灯を反映
+  clearTimeout(signOnT);
+  signOnT = setTimeout(() => {
+    sgs.forEach(el => { if (signLit[el.dataset.ch]) el.classList.add("on"); });
+    $("sign").classList.toggle("complete", all);
+  }, SIGN_ON_DELAY);
+  return all;
+}
+
+/* --- コマンド実行の中核 ---
+   存在しないコマンド → null を返して「無反応」。何度でも実行可 */
+function executeCommand(merged){
+  const entry = CMD_VALID[merged];
+  if (!entry) return null;                                        // 存在しない → 無反応
+  if (usedCommands.has(merged)) return "このコマンドは既に使用済みだ。";   // 同じコマンドは1回だけ
+  if (cmdRemaining <= 0) return "コマンドの使用回数が残っていない。";
+  usedCommands.add(merged);
+  cmdRemaining--;
+  cmdRuns++;
+
+  const counts = {};
+  for (const ch of merged) {
+    if ("unlock".includes(ch)) {
+      signLit[ch] = !signLit[ch];
+      counts[ch] = (counts[ch] || 0) + 1;
+    }
+  }
+  const complete = renderSign();
+  // 偶数回トグルされた文字（evening の n など）は最終状態が変わらないので、
+  // 反応が分かるように一瞬だけ点滅させる
+  blinkLetters(Object.keys(counts).filter(ch => counts[ch] % 2 === 0));
+
+  let msg = entry.msg;
+  if (merged === "rain")    startRain();
+  if (merged === "action")  startRunner();               // 画面下部を棒人間が走る
+  if (merged === "count")   cmdCountVisible = true;
+  if (merged === "hiphop")  playHiphop();
+  if (merged === "hear")    { sfxOn = true; sfx(880, 0.09); }
+  if (merged === "evening") setNightMode(true);          // 画面を黒く（配色を反転）
+  if (merged === "laptop")  $("cmd-reset").hidden = false;        // リセットボタンが出現
+  if (merged === "ticket")  cmdRemaining++;                       // 残り使用回数 +1
+  if (complete) {
+    // 電気看板が完成 → 時計が出現する
+    msg += "　▶ 看板に「UNLOCK」が完成した！";
+    if (!clockCardUnlocked) {
+      revealClockCard(); showClockOn(); notifyClock();
+      msg += "　端末に時計が追加された。";
+    }
+  }
+  return msg;
+}
+
+$("cmd-run").addEventListener("click", () => {
+  sfx(520, 0.08);
+  if (!cmdSlot1 && !cmdSlot2) {
+    $("cmd-effect").textContent = "カメラに映すワードを選んでください";
+    return;
+  }
+  const merged = (cmdSlot1 ? cmdSlot1.slice(1) : "") + (cmdSlot2 ? cmdSlot2.slice(1) : "");
+  const msg = executeCommand(merged);
+  if (msg === null) return;              // 存在しないコマンド：無反応（選択も保持）
+  $("cmd-effect").textContent = "コマンドの効果：" + msg;   // 効果は左に明示
+  cmdSlot1 = null; cmdSlot2 = null;      // 実行後は選択をリセット
+  renderCmdUI();
+});
+$("cmd-clear").addEventListener("click", () => {
+  cmdSlot1 = null; cmdSlot2 = null;
+  $("cmd-effect").textContent = "";
+  renderCmdUI();
+});
+
+/* リセット：看板の点灯と、これまでのコマンドの効果をすべて元に戻す。
+   誤操作防止のため 1.6秒の長押しでのみ実行される */
+function doFullReset(){
+  for (const ch of Object.keys(signLit)) signLit[ch] = false;
+  renderSign();
+  stopHiphop();                     // 音楽を止める
+  sfxOn = false;                    // 効果音を無効に
+  setNightMode(false);              // 配色を白へ
+  cmdCountVisible = false;
+  cmdRuns = 0;
+  usedCommands.clear();             // 使用済みの記録を消す
+  cmdRemaining = CMD_LIMIT_INIT;    // 残り使用回数を戻す
+  $("cmd-reset").hidden = true;     // リセットボタンも再び隠す
+  clockCardUnlocked = false;        // 時計を再びロック
+  $("home-clock").classList.add("locked");
+  $("home-clock").classList.remove("notify");
+  cmdSlot1 = null; cmdSlot2 = null;
+  renderCmdUI();
+  $("cmd-effect").textContent = "コマンドの効果をすべてリセットしました";
+}
+(function resetHold(){
+  const btn = $("cmd-reset");
+  let t = null;
+  const start = e => {
+    e.preventDefault();
+    if (t) return;
+    btn.classList.add("holding");
+    t = setTimeout(() => { t = null; btn.classList.remove("holding"); doFullReset(); }, 1600);
+  };
+  const cancel = () => {
+    if (t) { clearTimeout(t); t = null; }
+    btn.classList.remove("holding");
+  };
+  btn.addEventListener("pointerdown", start);
+  ["pointerup","pointerleave","pointercancel"].forEach(ev => btn.addEventListener(ev, cancel));
+  btn.addEventListener("click", e => e.preventDefault());   // 短いタップでは実行しない
+})();
+renderCmdUI();
+
+/* --- CLOCK ON 演出（看板の完成で時計が出現したとき） --- */
+function showClockOn(){
+  const el = $("clockon");
+  el.classList.remove("show");
+  void el.offsetWidth;
+  el.classList.add("show");   // 消えるのはホームに戻ったとき（goHome）
+}
+function hideClockOn(){ $("clockon").classList.remove("show"); }
+
+
+/* ================================================================
+   action コマンドの演出：画面下部を棒人間が走る
+   ----------------------------------------------------------------
+   自然に見せるための作り
+   ・接地中の足は「地面に対して静止」させる（位相を進んだ距離から算出）
+     → 足が滑る＝いちばん不自然に見える現象を防ぐ
+   ・膝は逆運動学（2リンクIK）で解き、人間と同じ向きにだけ曲げる
+   ・腰は1歩ごとに上下（接地の中間で最も低く、跳躍中に最も高い）
+   ・腕は脚と逆位相。肘は走行時の角度で曲げたまま振る
+   ・奥側の手足は少し薄く描いて前後関係を出す
+   ================================================================ */
+const RUN = {
+  hipH:52, thigh:26, shin:26,     // 腰の高さ・ももとすねの長さ
+  torso:32, head:7.5,             // 胴の長さ・頭の半径
+  upper:17, fore:16,              // 上腕・前腕
+  stride:19,                      // 足の前後の振り幅
+  lift:17,                        // 遊脚で足を持ち上げる高さ
+  bob:3.6,                        // 腰の上下
+  lean:10 * Math.PI / 180,        // 前傾
+  swing:42 * Math.PI / 180,       // 腕の振り幅
+  elbow:80 * Math.PI / 180,       // 肘の曲げ
+  speed:265,                      // px/秒
+};
+let runnerEls = null, runnerRAF = null;
+
+function buildRunner(){
+  const svg = $("runner-svg");
+  const NS = "http://www.w3.org/2000/svg";
+  const mk = (tag, attrs) => {
+    const el = document.createElementNS(NS, tag);
+    for (const k in attrs) el.setAttribute(k, attrs[k]);
+    svg.appendChild(el);
+    return el;
+  };
+  const line = op => mk("polyline", {
+    fill:"none", stroke:"var(--ice)", "stroke-width":3.4,
+    "stroke-linecap":"round", "stroke-linejoin":"round", opacity:op,
+  });
+  // 奥側（薄い）→ 胴 → 手前側 の順に重ねる
+  const back  = { leg:line(.45), arm:line(.45) };
+  const shadow = mk("ellipse", { fill:"var(--ice)", opacity:.12, ry:2.6 });
+  const torso = line(1);
+  const head  = mk("circle", { fill:"none", stroke:"var(--ice)", "stroke-width":3.4, r:RUN.head });
+  const front = { leg:line(1), arm:line(1) };
+  runnerEls = { svg, back, front, torso, head, shadow };
+}
+
+/* 2リンクIK：hip から foot へ、膝を dir 側に曲げて解く */
+function ikJoint(hx, hy, fx, fy, l1, l2, dir){
+  let dx = fx - hx, dy = fy - hy;
+  let d = Math.hypot(dx, dy);
+  const max = l1 + l2 - 0.001;
+  if (d > max) { const k = max / d; dx *= k; dy *= k; d = max; }
+  if (d < 0.001) d = 0.001;
+  const a = Math.atan2(dy, dx);
+  const c = Math.max(-1, Math.min(1, (l1*l1 + d*d - l2*l2) / (2 * l1 * d)));
+  const ang = a + dir * Math.acos(c);
+  return { x: hx + l1 * Math.cos(ang), y: hy + l1 * Math.sin(ang) };
+}
+
+/* 足先の位置（接地中は地面に固定、遊脚中は前へ振り出す） */
+function footAt(q, hipX){
+  const t = ((q % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+  if (t < Math.PI) {                       // 接地：前から後ろへ一定速度＝地面に対して静止
+    return { x: hipX + RUN.stride * (1 - 2 * t / Math.PI), y: 0 };
+  }
+  const u = t - Math.PI;                   // 遊脚：後ろから前へ、弧を描いて持ち上げる
+  return { x: hipX - RUN.stride * Math.cos(u), y: -RUN.lift * Math.sin(u) };
+}
+
+function poseRunner(dist){
+  const e = runnerEls;
+  // 進んだ距離から位相を出す（＝接地足が滑らない）
+  const q = dist * Math.PI / (2 * RUN.stride);
+  const hipX = 0;
+  const hipY = -RUN.hipH - RUN.bob * Math.cos(2 * q);   // 接地の中間で最も低い
+
+  // 脚（手前 = 位相 q、奥 = 位相 q+π）
+  for (const [key, ph] of [["front", q], ["back", q + Math.PI]]) {
+    const f = footAt(ph, hipX);
+    const knee = ikJoint(hipX, hipY, f.x, f.y, RUN.thigh, RUN.shin, -1);   // 膝は前へ曲がる
+    e[key].leg.setAttribute("points",
+      `${hipX},${hipY} ${knee.x.toFixed(1)},${knee.y.toFixed(1)} ${f.x.toFixed(1)},${f.y.toFixed(1)}`);
+  }
+
+  // 胴と頭（前傾）
+  const sx = hipX + Math.sin(RUN.lean) * RUN.torso;
+  const sy = hipY - Math.cos(RUN.lean) * RUN.torso;
+  const hx = sx + Math.sin(RUN.lean) * (RUN.head + 4);
+  const hy = sy - Math.cos(RUN.lean) * (RUN.head + 4);
+  e.torso.setAttribute("points", `${hipX},${hipY} ${sx.toFixed(1)},${sy.toFixed(1)}`);
+  e.head.setAttribute("cx", hx.toFixed(1));
+  e.head.setAttribute("cy", hy.toFixed(1));
+
+  // 腕（脚と逆位相・肘は曲げたまま振る）
+  for (const [key, ph] of [["front", q + Math.PI], ["back", q]]) {
+    const a  = RUN.swing * Math.sin(ph);
+    const ex = sx + Math.sin(a) * RUN.upper;
+    const ey = sy + Math.cos(a) * RUN.upper;
+    const b  = a + RUN.elbow;
+    const wx = ex + Math.sin(b) * RUN.fore;
+    const wy = ey + Math.cos(b) * RUN.fore;
+    e[key].arm.setAttribute("points",
+      `${sx.toFixed(1)},${sy.toFixed(1)} ${ex.toFixed(1)},${ey.toFixed(1)} ${wx.toFixed(1)},${wy.toFixed(1)}`);
+  }
+
+  // 足元の影（腰の高さに応じて薄く小さく）
+  const up = (hipY + RUN.hipH + RUN.bob) / (RUN.bob * 2);   // 0=低い 1=高い
+  e.shadow.setAttribute("cx", hipX);
+  e.shadow.setAttribute("cy", 1);
+  e.shadow.setAttribute("rx", (13 - 4 * up).toFixed(1));
+  e.shadow.setAttribute("opacity", (0.16 - 0.07 * up).toFixed(3));
+}
+
+function startRunner(){
+  if (REDUCED) return;
+  if (!runnerEls) buildRunner();
+  const box = $("runner");
+  const svg = runnerEls.svg;
+  box.classList.add("on");
+  cancelAnimationFrame(runnerRAF);
+
+  const startX = -90;
+  const endX   = window.innerWidth + 90;
+  let x = startX, last = performance.now();
+
+  const step = now => {
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    x += RUN.speed * dt;
+    poseRunner(x - startX);
+    svg.style.transform = `translateX(${x.toFixed(1)}px)`;
+    if (x < endX) runnerRAF = requestAnimationFrame(step);
+    else box.classList.remove("on");
+  };
+  poseRunner(0);
+  svg.style.transform = `translateX(${startX}px)`;
+  runnerRAF = requestAnimationFrame(step);
+}
+
+/* --- 雨の演出 --- */
+let rainTimer = null;
+function startRain(){
+  if (REDUCED) return;
+  const box = $("rain");
+  if (!box.childElementCount) {
+    for (let i = 0; i < 70; i++) {
+      const d = document.createElement("i");
+      d.style.left = (Math.random() * 100) + "%";
+      d.style.animationDuration = (0.65 + Math.random() * 0.6) + "s";
+      d.style.animationDelay = (Math.random() * 1.2) + "s";
+      d.style.opacity = 0.4 + Math.random() * 0.6;
+      box.appendChild(d);
+    }
+  }
+  box.classList.add("on");
+  clearTimeout(rainTimer);
+  rainTimer = setTimeout(() => box.classList.remove("on"), 6500);
+}
+
+/* ================================================================
+   設定（右上の ⚙ 設定）：取扱説明書 / 音量 / 明るさ
+   ================================================================ */
+$("settings-btn").addEventListener("click", () => $("settings").classList.add("open"));
+$("set-close").addEventListener("click", () => $("settings").classList.remove("open"));
+
+/* 音量（音楽と効果音の両方に反映） */
+$("set-vol").addEventListener("input", e => {
+  const v = Number(e.target.value);
+  AUDIO_VOL = v / 100;
+  SFX_GAIN  = 0.14 * AUDIO_VOL;
+  if (bgm) bgm.volume = AUDIO_VOL;
+  $("set-vol-val").textContent = v;
+});
+/* 画面の明るさ */
+$("set-bright").addEventListener("input", e => {
+  const v = Number(e.target.value);
+  document.body.style.setProperty("--ui-bright", (v / 100).toFixed(2));
+  $("set-bright-val").textContent = v;
+});
+
+/* 取扱説明書：端末内ビューアで表示。
+   コマンド解禁後は cmd=1、時計解禁後は clk=1 が付き、該当章が解禁版になる */
+function manualURL(){
+  const p = [];
+  if (cmdUnlocked) p.push("cmd=1");
+  if (clockCardUnlocked) p.push("clk=1");
+  return "manual.html" + (p.length ? "?" + p.join("&") : "");
+}
+$("set-manual").addEventListener("click", () => {
+  $("manual-frame").src = manualURL();
+  $("settings").classList.remove("open");
+  $("manual-view").classList.add("open");
+});
+$("manual-close").addEventListener("click", () => {
+  $("manual-view").classList.remove("open");
+  $("manual-frame").src = "about:blank";   // 読み込みを止めて状態を戻す
+});
+
+/* 誤操作防止：右クリックメニューを無効化（不要ならこの行を削除） */
+document.addEventListener("contextmenu", e => e.preventDefault());
+</script>
+</body>
+</html>
