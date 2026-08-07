@@ -1839,12 +1839,15 @@ let clockStarted = false;     // 最初にホーム画面が開いた瞬間か�
 let manualBase  = Date.now();
 let manualStart = (SHOW_START.h * 3600 + SHOW_START.m * 60) * 1000;
 
-/* 初回のみ：時計の進行を開始（起動モーション完了＝ホーム表示時に呼ばれる） */
+/* 初回のみ：時計の進行を開始 */
 function startShowClock(){
   if (clockStarted) return;
   clockStarted = true;
   manualBase = Date.now();
 }
+
+// ページ（HTML）が開いたタイミングで自動的に startShowClock を実行する
+document.addEventListener('DOMContentLoaded', startShowClock);
 
 function currentTime(){
   if (clockMode === "real") {
