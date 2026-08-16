@@ -17,10 +17,11 @@
   /* ============================================================
      「公演開始まであと30分」用 端末ソフト  ―  PARALLELS-OS
      - 待機画面（電源ボタン）→ クリックで起動モーション → ホーム
-     - 左上の「⟳ RESTART」ボタン：クリックで起動モーションを再生してホームへ
-                                  約2秒 長押しで運営用パネル
-     - 時計は作中時刻 19:30 スタート（作中公演は 19:30〜20:00）
-       Ctrl + Shift 同時押しでいつでも 19:30 にリセット
+     - 左上の「⟳ RESTART」：クリックで起動モーションを再生してホームへ
+                            約2秒 長押しで運営用パネル
+     - 時計は待機画面をタップした瞬間に 19:27 からカウント開始
+       （作中公演は 20:00〜20:30）
+       Ctrl + Shift 同時押しでいつでも 19:27 にリセット
      - 日付は 8/30 固定（JSの CLOCK_DATE_TEXT で変更可）
      - 時計の数字は通常書体の赤。「0」だけ丸＋斜線（🚫型）… STEP裏の仕掛け
      - 配色は常に白背景。例外は evening コマンドの夜間モードのみ
@@ -29,7 +30,7 @@
        スロットは「カメラ１」「カメラ２」。頭文字を消して合体した語がコマンド
        同じコマンドは何度でも実行可（unlockの文字は押すたび点灯⇄消灯）
        「リセット」＝看板の点灯とコマンドの効果をすべて元に戻す
-       効果は「コマンドの効果：」を付けて左に表示
+       効果は画面下の「コマンドの効果」欄に表示
        ダミー：hiphop(ship+shop)=hiphop.aac をループ再生（リセットで停止）/
                hear(she+car)=以降のタップに効果音 /
                evening(seven+ring)=夜間モード（画面が黒くなる）
@@ -52,6 +53,7 @@
     --pulse:#6f8dff;                      /* アクセント（電光藍） */
     --pulse-soft:rgba(111,141,255,.22);
     --alert:#ff6b57;                      /* error */
+    --amber:#f5b562;                      /* 注意・補助情報 */
     --clock-ink:#ff5252;                  /* 時計の数字色（配色モードで変化） */
     --clock-glow:rgba(255,82,82,.35);     /* 時計の発光色 */
     --lcd-lit:#dfe9ff;
@@ -188,10 +190,20 @@
   }
   #home-sub::after{transform:scaleX(-1);}
 
-  #home .apps{display:flex; gap:clamp(14px, 2vw, 28px); flex-wrap:wrap; justify-content:center;}
+  #home .apps{
+    display:flex; flex-wrap:wrap; justify-content:center;
+    max-width:100%;
+    gap:20px;                       /* clamp() 非対応ブラウザ用のフォールバック */
+    gap:clamp(14px, 2vw, 28px);
+  }
   .fn-card{
-    position:relative; width:clamp(174px, 20.5vw, 252px);
-    display:flex; flex-direction:column; gap:12px;
+    position:relative;
+    width:212px;                    /* ← フォールバック（必ず先に書く） */
+    width:clamp(174px, 20.5vw, 252px);
+    max-width:100%; flex:0 0 auto;
+    /* button の既定の align-items がブラウザによって flex-start / center と異なり、
+       中の白いスクリーン枠が縮んで左に寄る不具合が出るため明示的に stretch にする */
+    display:flex; flex-direction:column; align-items:stretch; gap:12px;
     padding:16px 18px 14px;
     background:linear-gradient(160deg, rgba(30,41,66,.85), rgba(13,19,35,.9));
     border:1px solid var(--line); border-radius:24px;
@@ -219,26 +231,29 @@
                0 0 38px rgba(111,141,255,.25),
                inset 0 1px 0 rgba(255,255,255,.06);
   }
-  .fc-top{display:flex; align-items:baseline; justify-content:space-between; font-family:var(--mono);}
+  .fc-top{display:flex; align-items:baseline; justify-content:space-between; width:100%; font-family:var(--mono);}
   .fc-idx{font-size:.82rem; letter-spacing:.18em; color:var(--pulse);}
   .fc-en{font-size:.6rem; letter-spacing:.34em; color:rgba(143,160,196,.6);}
   .fc-screen{
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:7px;
-    height:132px;
+    width:100%; align-self:stretch; overflow:hidden;   /* 中身がはみ出して崩れるのを防ぐ */
+    height:132px; flex:0 0 auto;
     background:linear-gradient(180deg, #0a101f, #060a14);
     border:1px solid var(--line); border-radius:14px;
     box-shadow:inset 0 0 26px rgba(0,0,0,.65);
   }
-  .fc-screen .fc-icon{width:62px; height:62px; filter:drop-shadow(0 0 12px rgba(111,141,255,.45));}
+  .fc-screen .fc-icon{width:62px; height:62px; flex:0 0 auto; max-width:100%; filter:drop-shadow(0 0 12px rgba(111,141,255,.45));}
   #home-clock-svg{
-    display:block; width:min(186px, 92%); height:auto;
+    display:block; height:auto; max-width:100%;
+    width:170px;                    /* ← フォールバック（min() 非対応対策） */
+    width:min(186px, 92%);
     filter:drop-shadow(0 0 8px var(--clock-glow));
   }
   #home-clock-date{
     font-family:var(--mono); font-size:.6rem; letter-spacing:.32em; text-indent:.32em;
-    color:var(--sub);
+    color:var(--sub); max-width:100%; white-space:nowrap;
   }
-  .fc-bottom{display:flex; align-items:center; justify-content:space-between;}
+  .fc-bottom{display:flex; align-items:center; justify-content:space-between; width:100%;}
   .fc-name{font-size:1.05rem; font-weight:600; letter-spacing:.3em; text-indent:.3em;}
   .fc-go{
     font-family:var(--mono); font-size:1.05rem; color:var(--sub);
@@ -247,6 +262,16 @@
   @keyframes hcpulse{0%,100%{opacity:.35;} 50%{opacity:1;}}
   .fn-card:focus-visible{outline:none;}
 
+  /* 画面が狭い・低いPCでも崩れないように縮める（他機での表示ずれ対策） */
+  @media (max-width:900px), (max-height:680px){
+    #home .stagger{padding:14px 10px;}
+    #home-sub{margin:10px 0 24px;}
+    .fn-card{width:168px; padding:12px 14px 10px; gap:8px;}
+    .fc-screen{height:100px;}
+    .fc-screen .fc-icon{width:48px; height:48px;}
+    .fc-name{font-size:.92rem; letter-spacing:.2em; text-indent:.2em;}
+    #ticker{margin-top:22px;}
+  }
   #ticker{
     margin-top:56px; font-family:var(--mono); font-size:.68rem;
     letter-spacing:.3em; color:rgba(143,160,196,.6); height:1em;
@@ -450,22 +475,44 @@
     animation:mapop .45s cubic-bezier(.2,.8,.3,1.25) forwards;}
   @keyframes mapop{from{opacity:0; transform:scale(.6);} to{opacity:1; transform:scale(1);}}
 
-  /* ---------- 簡易コマンド ---------- */
-  #app-command .app-body{padding:12px 20px 10px; gap:9px; overflow:hidden;}
-  #sign{
-    width:min(520px,100%);
-    display:flex; flex-direction:column; align-items:center; gap:2px;
-    padding:8px 18px 6px;
-    background:linear-gradient(180deg, #0a101f, #060a14);
+  /* ---------- 簡易コマンド ----------
+     情報を「1 ワードを選ぶ／2 実行／3 看板」の3ブロックに分け、
+     見出しは小さく淡く、数値と選択肢は大きく——という強弱で整理している */
+  #app-command .app-body{padding:14px 20px 10px; gap:10px; overflow:hidden;}
+  #cmd-layout{
+    display:grid; grid-template-columns:minmax(0,1.32fr) minmax(300px,1fr);
+    gap:14px; width:min(1120px,100%); align-items:start;
+  }
+  #panel-right{display:flex; flex-direction:column; gap:10px; min-width:0;}
+  .panel{
+    background:linear-gradient(180deg, rgba(19,26,44,.72), rgba(10,15,28,.72));
     border:1px solid var(--line); border-radius:16px;
+    padding:10px 14px 12px;
+  }
+  .panel-t{
+    display:flex; align-items:center; gap:9px; margin:0 0 9px;
+    font-size:.82rem; font-weight:600; letter-spacing:.1em; color:var(--sub);
+  }
+  .pt-no{
+    flex:0 0 auto; width:19px; height:19px; border-radius:50%;
+    background:rgba(111,141,255,.16); border:1px solid rgba(111,141,255,.5);
+    color:var(--pulse); font-family:var(--mono); font-size:.68rem; font-weight:700;
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  /* --- 看板 --- */
+  #sign{
+    display:flex; align-items:center; justify-content:center;
+    padding:8px 12px 6px;
+    background:linear-gradient(180deg, #0a101f, #060a14);
+    border:1px solid var(--line); border-radius:12px;
     box-shadow:inset 0 0 30px rgba(0,0,0,.65);
     transition:border-color .4s, box-shadow .4s;
   }
-  #sign .cap{font-family:var(--mono); font-size:.58rem; letter-spacing:.42em; color:rgba(143,160,196,.5);}
-  #sign-letters{display:flex; gap:15px;}
+  #sign-letters{display:flex; gap:14px;}
   .sg{
-    font-family:var(--mono); font-weight:700; font-size:2.05rem;
-    color:transparent;                                   /* 未点灯の文字は完全に隠す（答えバレ防止） */
+    font-family:var(--mono); font-weight:700; font-size:2.3rem;
+    color:transparent;                                   /* 未点灯の文字は隠す（答えバレ防止） */
     border-bottom:3px solid rgba(150,178,255,.16);       /* 6つの空き枠だけ見せる */
     padding:0 3px;
     transition:color .3s, text-shadow .3s, border-color .3s;
@@ -475,7 +522,7 @@
     text-shadow:0 0 16px rgba(150,180,255,.85), 0 0 42px rgba(111,141,255,.55);
     border-bottom-color:rgba(150,180,255,.7);
   }
-  /* 偶数回トグルで状態が変わらない文字の点滅（消灯中→一瞬光る／点灯中→一瞬消える） */
+  /* 偶数回トグルで状態が変わらない文字の点滅 */
   .sg.blink{animation:sgblinkon .5s ease;}
   @keyframes sgblinkon{
     0%,100%{color:transparent; text-shadow:none; border-bottom-color:rgba(150,178,255,.16);}
@@ -493,48 +540,52 @@
   }
   @keyframes signdone{50%{transform:scale(1.02);}}
 
-  #cmd-slots{display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:center;}
+  /* --- スロットと実行 --- */
+  #cmd-slots{display:flex; align-items:center; gap:8px; justify-content:center;}
   .cmd-slot{
-    min-width:140px; padding:7px 14px; text-align:center;
-    font-size:.92rem; color:var(--sub);
+    flex:1 1 0; min-width:0; padding:9px 8px; text-align:center;
+    font-size:1rem; color:var(--ice);
     border:1px dashed var(--line); border-radius:12px;
-    transition:border-color .2s, color .2s;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    transition:border-color .2s, background .2s;
   }
-  .cmd-slot.filled{border-style:solid; color:var(--ice); border-color:rgba(111,141,255,.5);}
-  .cmd-plus{font-family:var(--mono); color:var(--sub);}
+  /* 未選択のときはカメラ名を淡く出す（data-cam を使うので文字が重ならない） */
+  .cmd-slot:empty::before{content:attr(data-cam); color:var(--sub);}
+  .cmd-slot.filled{border-style:solid; border-color:rgba(111,141,255,.55); background:rgba(111,141,255,.1);}
+  .cmd-plus{flex:0 0 auto; font-family:var(--mono); color:var(--sub);}
+  #cmd-actions{display:flex; gap:8px; margin-top:9px;}
   #cmd-run{
-    font-size:.95rem; font-weight:700; letter-spacing:.25em; text-indent:.25em;
-    padding:8px 24px; border:none; border-radius:12px;
+    flex:1 1 auto;
+    font-size:1rem; font-weight:700; letter-spacing:.25em; text-indent:.25em;
+    padding:10px 20px; border:none; border-radius:12px;
     background:linear-gradient(180deg, #7f9bff, #5872e6); color:#0a0f1e; cursor:pointer;
     box-shadow:0 6px 16px rgba(111,141,255,.35);
     transition:transform .12s, filter .15s;
   }
   #cmd-run:hover{filter:brightness(1.08);}
-  #cmd-run:active{transform:scale(.95);}
-  /* 状態表示：残り回数・使用回数・リセットを1行にまとめる */
-  #cmd-status{display:flex; align-items:stretch; gap:14px; flex-wrap:wrap; justify-content:center;}
+  #cmd-run:active{transform:scale(.96);}
+  #cmd-clear{flex:0 0 auto; padding:10px 18px;}
+
+  /* --- 状態（残り回数・使用回数・リセット） --- */
+  #cmd-status{display:flex; align-items:stretch; gap:9px;}
   .stat{
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
-    min-width:124px; padding:6px 16px;
+    flex:1 1 0; min-width:0;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+    padding:7px 10px;
     border:1px solid var(--line); border-radius:14px;
     background:rgba(17,24,39,.5);
   }
-  .stat b{
-    font-family:var(--mono); font-size:1.3rem; font-weight:700; line-height:1;
-    color:var(--ice);
-  }
-  .stat i{font-style:normal; font-size:.64rem; letter-spacing:.16em; color:var(--sub);}
+  .stat b{font-family:var(--mono); font-size:1.5rem; font-weight:700; line-height:1; color:var(--ice);}
+  .stat i{font-style:normal; font-size:.66rem; letter-spacing:.12em; color:var(--sub);}
   .stat.low{border-color:rgba(255,107,87,.55); background:rgba(255,107,87,.08);}
   .stat.low b{color:var(--alert);}
   .stat.used{border-color:rgba(245,181,98,.45); background:rgba(245,181,98,.08);}
   .stat.used b{color:var(--amber);}
-
-  /* 全リセット：他のボタンと取り違えないよう警告色＋2段表示。
-     誤タップを防ぐため 1.6秒の長押しでのみ実行され、押している間はゲージが伸びる */
+  /* 全リセット：警告色＋1.6秒の長押し（押している間ゲージが伸びる） */
   #cmd-reset{
-    position:relative; overflow:hidden;
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
-    min-width:172px; padding:6px 18px;
+    position:relative; overflow:hidden; flex:1 1 0; min-width:0;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+    padding:7px 12px;
     font-family:inherit; cursor:pointer;
     color:var(--alert); background:rgba(255,107,87,.07);
     border:1px solid rgba(255,107,87,.5); border-radius:14px;
@@ -542,9 +593,9 @@
     touch-action:none;
   }
   #cmd-reset:hover{background:rgba(255,107,87,.15);}
-  #cmd-reset .rs-main{position:relative; z-index:1; font-size:.95rem; font-weight:700; letter-spacing:.06em;}
-  #cmd-reset .rs-sub{position:relative; z-index:1; font-size:.62rem; letter-spacing:.14em; opacity:.8;}
-  #cmd-reset::before{                       /* 長押しゲージ */
+  #cmd-reset .rs-main{position:relative; z-index:1; font-size:.9rem; font-weight:700; letter-spacing:.04em; white-space:nowrap;}
+  #cmd-reset .rs-sub{position:relative; z-index:1; font-size:.6rem; letter-spacing:.1em; opacity:.8; white-space:nowrap;}
+  #cmd-reset::before{
     content:""; position:absolute; left:0; top:0; bottom:0; width:100%;
     background:rgba(255,107,87,.3);
     transform:scaleX(0); transform-origin:left center;
@@ -552,13 +603,12 @@
   #cmd-reset.holding{box-shadow:0 0 18px rgba(255,107,87,.35);}
   #cmd-reset.holding::before{animation:holdfill 1.6s linear forwards;}
   @keyframes holdfill{to{transform:scaleX(1);}}
-  #cmd-chips{
-    display:grid; grid-template-columns:repeat(5, 1fr); gap:7px;
-    width:min(720px,100%);
-  }
+
+  /* --- ワードの選択肢（4列×5行。英字を主役に、和訳は小さく） --- */
+  #cmd-chips{display:grid; grid-template-columns:repeat(4, 1fr); gap:8px;}
   .cmd-chip{
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
-    height:46px; border-radius:11px; cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;
+    height:56px; border-radius:12px; cursor:pointer;
     color:var(--ice);
     background:linear-gradient(180deg, #202b48, #141c33);
     border:1px solid rgba(150,178,255,.20); border-bottom-color:rgba(150,178,255,.08);
@@ -573,12 +623,30 @@
     box-shadow:0 0 0 #070b16, 0 0 16px rgba(111,141,255,.35);
     transform:translateY(3px);
   }
-  .cmd-chip .ce{font-family:var(--mono); font-size:.98rem;}
-  .cmd-chip .cj{font-size:.6rem; color:var(--sub); letter-spacing:.08em;}
-  #cmd-effect{
-    min-height:1.5em; width:min(720px,100%);
-    text-align:left;
-    font-size:.98rem; letter-spacing:.06em; color:var(--ice);
+  .cmd-chip .ce{font-family:var(--mono); font-size:1.06rem; line-height:1.15;}
+  .cmd-chip .cj{font-size:.62rem; color:var(--sub); letter-spacing:.04em; line-height:1.15;}
+
+  /* --- 効果の表示（左に見出し、右に本文） --- */
+  #cmd-effect-box{
+    display:flex; align-items:center; gap:14px;
+    width:min(1120px,100%); min-height:44px;
+    padding:8px 16px;
+    border:1px solid var(--line); border-radius:14px;
+    background:rgba(10,15,28,.55);
+  }
+  #cmd-effect-box .ef-cap{
+    flex:0 0 auto; font-family:var(--mono); font-size:.6rem;
+    letter-spacing:.24em; color:var(--sub);
+    border-right:1px solid var(--line); padding-right:14px;
+  }
+  #cmd-effect{flex:1 1 auto; font-size:1rem; letter-spacing:.04em; color:var(--ice);}
+
+  /* 画面が狭いときは1カラムに積む */
+  @media (max-width:900px){
+    #cmd-layout{grid-template-columns:1fr;}
+    #cmd-chips{grid-template-columns:repeat(5, 1fr);}
+    .cmd-chip{height:50px;}
+    .sg{font-size:2rem;}
   }
 
   /* ---------- 時計カードのロック状態（laptopコマンドで解除） ---------- */
@@ -985,37 +1053,60 @@
       <span class="app-tag">QUICK COMMAND</span>
     </div>
     <div class="app-body stagger">
-      <!-- 電気看板 -->
-      <div id="sign">
-        <span class="cap">SIGNBOARD</span>
-        <div id="sign-letters">
-          <span class="sg" data-ch="u">U</span><span class="sg" data-ch="n">N</span><span class="sg" data-ch="l">L</span><span class="sg" data-ch="o">O</span><span class="sg" data-ch="c">C</span><span class="sg" data-ch="k">K</span>
+      <div id="cmd-layout">
+
+        <!-- 左：ワードを選ぶ -->
+        <section class="panel" id="panel-words">
+          <h3 class="panel-t"><span class="pt-no">1</span>ワードを選ぶ</h3>
+          <div id="cmd-chips"></div>
+        </section>
+
+        <!-- 右：実行と状態 -->
+        <div id="panel-right">
+
+          <section class="panel" id="panel-run">
+            <h3 class="panel-t"><span class="pt-no">2</span>実行</h3>
+            <div id="cmd-slots">
+              <span class="cmd-slot" id="cmd-slot1" data-cam="カメラ１"></span>
+              <span class="cmd-plus">＋</span>
+              <span class="cmd-slot" id="cmd-slot2" data-cam="カメラ２"></span>
+            </div>
+            <div id="cmd-actions">
+              <button id="cmd-run">実行</button>
+              <button id="cmd-clear" class="back-btn">クリア</button>
+            </div>
+          </section>
+
+          <section class="panel" id="panel-sign">
+            <h3 class="panel-t"><span class="pt-no">3</span>鍵を開けるコマンドは</h3>
+            <div id="sign">
+              <div id="sign-letters">
+                <span class="sg" data-ch="u">U</span><span class="sg" data-ch="n">N</span><span class="sg" data-ch="l">L</span><span class="sg" data-ch="o">O</span><span class="sg" data-ch="c">C</span><span class="sg" data-ch="k">K</span>
+              </div>
+            </div>
+          </section>
+
+          <div id="cmd-status">
+            <span class="stat" id="stat-remain">
+              <b id="cmd-runs">7</b><i>残り回数</i>
+            </span>
+            <span class="stat used" id="stat-used" hidden>
+              <b id="cmd-used">0</b><i>使用回数</i>
+            </span>
+            <button id="cmd-reset" type="button" hidden>
+              <span class="rs-main">⟲ 長押しでリセット</span>
+              <span class="rs-sub">効果を全て消す</span>
+            </button>
+          </div>
+
         </div>
       </div>
-      <!-- 選択スロットと実行 -->
-      <div id="cmd-slots">
-        <span class="cmd-slot" id="cmd-slot1">カメラ１</span>
-        <span class="cmd-plus">＋</span>
-        <span class="cmd-slot" id="cmd-slot2">カメラ２</span>
-        <button id="cmd-run">実行</button>
-        <button id="cmd-clear" class="back-btn">クリア</button>
+
+      <!-- 効果の表示 -->
+      <div id="cmd-effect-box">
+        <span class="ef-cap">コマンドの効果</span>
+        <span id="cmd-effect" aria-live="polite"></span>
       </div>
-      <!-- 状態表示（残り回数・使用回数・リセット） -->
-      <div id="cmd-status">
-        <span class="stat" id="stat-remain">
-          <b id="cmd-runs">10</b><i>コマンド残り回数</i>
-        </span>
-        <span class="stat used" id="stat-used" hidden>
-          <b id="cmd-used">0</b><i>端末の使用回数</i>
-        </span>
-        <button id="cmd-reset" type="button" hidden>
-          <span class="rs-main">⟲ 長押しでリセット</span>
-          <span class="rs-sub">コマンドの効果を全て消す</span>
-        </button>
-      </div>
-      <!-- ワード選択肢（日本語×英単語） -->
-      <div id="cmd-chips"></div>
-      <div id="cmd-effect" aria-live="polite"></div>
     </div>
   </section>
 
@@ -1060,7 +1151,7 @@
     <h3>STAFF PANEL</h3>
     <label>
       指定時刻から進行：
-      <input type="time" id="staff-time" value="19:25" step="60">
+      <input type="time" id="staff-time" value="19:27" step="60">
     </label>
     <label>
       <button id="staff-fs-btn" type="button">全画面を解除する</button>
@@ -1070,7 +1161,10 @@
       <button id="staff-show-clock" type="button">時計ロック解除</button>
       <button id="staff-unlock-cmd" type="button">コマンド解禁</button>
     </label>
-    <span class="note">初期状態では作中時刻 <b>19:25</b> から進行します（作中公演は 20:00〜20:30）。<b>Ctrl + Shift</b> を同時押しすると、いつでも 19:30 にリセットできます。全画面表示の解除・再開は上のボタンで即座に切り替わります（解除中はタッチしても全画面に戻りません）。</span>
+    <label>
+      <button id="staff-reboot" type="button">再起動（起動モーションを再生）</button>
+    </label>
+    <span class="note">待機画面をタップした瞬間から作中時刻 <b>19:27</b> で進行します（作中公演は 20:00〜20:30）。<b>Ctrl + Shift</b> を同時押しすると、いつでも 19:27 にリセットできます。全画面表示の解除・再開は上のボタンで即座に切り替わります（解除中はタッチしても全画面に戻りません）。</span>
     <div class="row">
       <button id="staff-close">閉じる</button>
       <button id="staff-apply" class="primary">設定</button>
@@ -1132,6 +1226,25 @@ const DICT_TEXT = `
 にゅーす、ニュース = news
 みみ、耳 = ear
 てまえがわ = front
+はーと、ハート = heart
+
+# --- マップのイラスト・コマンドの選択肢と表記をそろえた語 ---
+くま、熊 = bear
+ぺん = pen
+もっぷ = mop
+はくしゅ、拍手 = clap
+すとっぷ = stop
+えこ = eco
+かり、狩り = hunt
+じじつ、事実 = fact
+らいおん = lion
+ぼう、棒 = stick
+あみ、網 = net
+きんか、金貨 = gold
+くるま、車 = car
+ふね、船 = ship
+とり、鳥 = bird
+かのじょ、彼女 = she
 
 # ===== 人・体 =====
 ひと、人 = person
@@ -1345,7 +1458,7 @@ const DICT_TEXT = `
 まよなか、真夜中 = midnight
 ひ、日 = day
 しゅう、週 = week
-つき、月 = month
+かげつ = month
 とし、年 = year
 びょう、秒 = second
 ふん、分 = minute
@@ -1570,6 +1683,101 @@ const DICT_TEXT = `
 なぞ、謎 = mystery
 こたえあわせ、答え合わせ = check
 じしょ = dictionary
+
+# ===== 動作 =====
+みる、見る = see
+きく、聞く = listen
+はなす、話す = speak
+よむ、読む = read
+かく、書く = write
+たべる、食べる = eat
+のむ、飲む = drink
+ねる、寝る = sleep
+おきる、起きる = wake
+あるく、歩く = walk
+はしる、走る = run
+とぶ、飛ぶ = fly
+およぐ、泳ぐ = swim
+すわる、座る = sit
+たつ、立つ = stand
+わらう、笑う = laugh
+なく、泣く = cry
+おこる、怒る = angry
+かんがえる、考える = think
+おぼえる、覚える = remember
+わすれる、忘れる = forget
+おしえる、教える = teach
+ならう、習う = learn
+つくる、作る = make
+こわす、壊す = break
+なおす、直す = fix
+かう、買う = buy
+うる、売る = sell
+あげる = give
+もらう = receive
+まつ、待つ = wait
+さがす、探す = search
+みつける、見つける = find
+はこぶ、運ぶ = carry
+おす、押す = push
+ひく、引く = pull
+なげる、投げる = throw
+うたう、歌う = sing
+おどる、踊る = dance
+あそぶ、遊ぶ = play
+はたらく、働く = work
+やすむ、休む = rest
+いく、行く = go
+くる、来る = come
+かえる、帰る = return
+とまる、止まる = stop
+うごく、動く = move
+はじめる、始める = start
+おわる、終わる = finish
+まもる、守る = protect
+たすける、助ける = help
+えらぶ、選ぶ = choose
+きめる、決める = decide
+しる、知る = know
+
+# ===== 様子・気持ち =====
+おおきい、大きい = big
+ちいさい、小さい = small
+ながい、長い = long
+みじかい、短い = short
+たかい、高い = high
+ひくい、低い = low
+あたらしい、新しい = new
+ふるい、古い = old
+はやい、速い = fast
+おそい、遅い = slow
+つよい、強い = strong
+よわい、弱い = weak
+あつい、暑い = hot
+さむい、寒い = cold
+あかるい、明るい = bright
+くらい、暗い = dark
+おもい、重い = heavy
+かるい、軽い = light
+ひろい、広い = wide
+せまい、狭い = narrow
+うつくしい、美しい = beautiful
+かわいい、可愛い = cute
+たのしい、楽しい = fun
+うれしい、嬉しい = happy
+かなしい、悲しい = sad
+こわい、怖い = scary
+おもしろい、面白い = interesting
+むずかしい、難しい = difficult
+やさしい、優しい = kind
+しずか、静か = quiet
+うるさい = noisy
+きれい、綺麗 = clean
+きたない、汚い = dirty
+あぶない、危ない = dangerous
+あんぜん、安全 = safe
+しあわせ、幸せ = happiness
+げんき、元気 = healthy
 `;
 
 /* 入力ゆれの吸収：全角→半角、カタカナ→ひらがな、空白や記号を除去して比較する */
@@ -1828,10 +2036,10 @@ function colonSVG(cx, visible, scale = 1){
 }
 
 /* 時刻の供給
-   初期状態：作中時刻 19:30 から進行（作中公演は 19:30〜20:00）
-   Ctrl + Shift 同時押しでいつでも 19:30 にリセット
+   初期状態：待機画面をタップした瞬間に作中時刻 19:27 から進行
+   Ctrl + Shift 同時押しでいつでも 19:27 にリセット
    運営用パネル（ロゴ長押し）で任意時刻にも変更可能 */
-const SHOW_START = { h: 19, m: 30 };           // 作中公演の開始前時刻
+const SHOW_START = { h: 19, m: 27 };           // 待機画面をタップした瞬間の作中時刻
 const CLOCK_DATE_TEXT = "08.30 SUN";           // 日付は 8/30 固定（曜日表記は自由に変更可）
 
 let clockMode = "manual";     // "real" | "manual"
@@ -1845,13 +2053,13 @@ function startShowClock(){
   clockStarted = true;
   manualBase = Date.now();
 }
-  
+
 function currentTime(){
   if (clockMode === "real") {
     const d = new Date();
     return { h: d.getHours(), m: d.getMinutes(), s: d.getSeconds() };
   }
-  const elapsed = clockStarted ? (Date.now() - manualBase) : 0;   // 開始前は19:30で静止
+  const elapsed = clockStarted ? (Date.now() - manualBase) : 0;   // 開始前は19:27で静止
   const total = (manualStart + elapsed) % 86400000;
   const h = Math.floor(total / 3600000);
   const m = Math.floor((total % 3600000) / 60000);
@@ -1896,14 +2104,14 @@ function renderClock(){
 setInterval(renderClock, 250);
 renderClock();
 
-/* Ctrl + Shift → 作中時刻 19:30 にリセット */
+/* Ctrl + Shift → 作中時刻 19:27 にリセット */
 function resetShowTime(){
   clockMode   = "manual";
-  clockStarted = true;   // リセット＝その瞬間から19:30で再スタート
+  clockStarted = true;   // リセット＝その瞬間から19:27で再スタート
   manualStart = (SHOW_START.h * 3600 + SHOW_START.m * 60) * 1000;
   manualBase  = Date.now();
   renderClock();
-  showToast("TIME RESET → 19:30");
+  showToast("TIME RESET → 19:27");
 }
 document.addEventListener("keydown", e => {
   if (e.repeat) return;
@@ -1926,7 +2134,7 @@ function showToast(msg){
 /* ================================================================
    ブースの見取り図（座標は viewBox 800×520 基準・自由に調整できます）
    ・部屋の上の壁に入口。左側に「置かれるイラスト」の一覧を書き出す
-   ・右半分に机が2つ。左の机＝カメラ①②と鏡、右の机＝金庫
+   ・右半分に机が2つ。左の机＝カメラ①②と鏡、右の机＝宝箱
    ================================================================ */
 const MAP_ROOM = { x:24, y:26, w:752, h:468 };          // 部屋の外壁
 const MAP_DOOR = { x1:140, x2:290 };                    // 上の壁にあける入口の範囲
@@ -1949,12 +2157,16 @@ const MAP_ILLUSTS = [
   { en:"Stick", jp:"ぼう" },
   { en:"Train", jp:"でんしゃ" },
 ];
+/* 置かれるもの（イラスト以外）。行を足し引きするだけで一覧に反映されます */
+const MAP_OBJECTS = [
+  { en:"Mirror", jp:"鏡" },
+  { en:"Sun",    jp:"太陽" },
+];
 /* 部屋に置かれている設備 */
 const MAP_ITEMS = [
   { type:"camera", label:"カメラ①", x:470, y:222 },
   { type:"camera", label:"カメラ②", x:470, y:372 },
-  { type:"mirror", label:"鏡",       x:378, y:300 },
-  { type:"safe",   label:"金庫",     x:672, y:222 },
+  { type:"chest",  label:"宝箱",     x:672, y:222 },
 ];
 
 /* ================================================================
@@ -1962,7 +2174,7 @@ const MAP_ITEMS = [
    ================================================================ */
 function drawMap(animate){
   const svg = $("map-svg");
-  const C = { camera:"#8fa8ff", illust:"#f5b562", mirror:"#9db7ff", safe:"#8fa8ff", item:"#5d6b8c" };
+  const C = { camera:"#8fa8ff", illust:"#f5b562", mirror:"#9db7ff", chest:"#f5b562", item:"#5d6b8c" };
   const GRID = "rgba(150,178,255,.07)";
   const MONO = "'Cascadia Mono','Consolas','Courier New',monospace";
   const R = MAP_ROOM;
@@ -1986,18 +2198,24 @@ function drawMap(animate){
                 font-size="15" fill="#8fa0c4" letter-spacing="4">入口</text>
         </g>`;
 
-  // 置かれるイラストの一覧（左側に書き出す）
-  const LX = 62, LY = 112;
-  let list = `<text x="${LX}" y="${LY - 34}" font-size="15" fill="#e8efff" letter-spacing="3">置かれるイラスト</text>
-              <line x1="${LX}" y1="${LY - 22}" x2="${LX + 196}" y2="${LY - 22}" stroke="rgba(245,181,98,.45)"/>`;
-  MAP_ILLUSTS.forEach((it, i) => {
-    const y = LY + i * 27;
-    list += `<circle cx="${LX + 5}" cy="${y - 5}" r="4" fill="#f5b562" opacity=".85"/>
-             <text x="${LX + 20}" y="${y}" font-size="14" fill="#e8efff">
-               <tspan font-family="${MONO}" fill="#f5b562">${it.en}</tspan>
-               <tspan fill="#8fa0c4"> ─ </tspan>${it.jp}</text>`;
-  });
-  s += `<g class="pop" style="animation-delay:1.05s">${list}</g>`;
+  // 左側に2列で書き出す：置かれるイラスト ／ 置かれるもの
+  const LY = 112;
+  const drawList = (x, title, rows, dot) => {
+    let g = `<text x="${x}" y="${LY - 34}" font-size="14" fill="#e8efff" letter-spacing="2">${title}</text>
+             <line x1="${x}" y1="${LY - 22}" x2="${x + 140}" y2="${LY - 22}" stroke="rgba(245,181,98,.45)"/>`;
+    rows.forEach((it, i) => {
+      const y = LY + i * 26;
+      g += `<circle cx="${x + 5}" cy="${y - 5}" r="3.6" fill="${dot}" opacity=".85"/>
+            <text x="${x + 18}" y="${y}" font-size="13" fill="#e8efff">
+              <tspan font-family="${MONO}" fill="${dot}">${it.en}</tspan>
+              <tspan fill="#8fa0c4"> ─ </tspan>${it.jp}</text>`;
+    });
+    return g;
+  };
+  s += `<g class="pop" style="animation-delay:1.05s">
+          ${drawList(46,  "置かれるイラスト", MAP_ILLUSTS, "#f5b562")}
+          ${drawList(206, "置かれるもの",     MAP_OBJECTS, "#9db7ff")}
+        </g>`;
 
   // 机
   MAP_DESKS.forEach((d, i) => {
@@ -2009,7 +2227,7 @@ function drawMap(animate){
           </g>`;
   });
 
-  // 設備（カメラ・鏡・金庫）
+  // 設備（カメラ・鏡・宝箱）
   // 注意：配置(translate)は外側のg、アニメ(.pop)は内側のgに分離すること。
   // 同じ要素に載せると、CSSアニメの transform が translate 属性を上書きして
   // 全アイテムが左上(原点)に集まってしまう。
@@ -2024,16 +2242,17 @@ function drawMap(animate){
         <circle cx="0" cy="-4" r="13" fill="none" stroke="${c}" stroke-width="2.5"/>
         <circle cx="0" cy="-4" r="4.5" fill="${c}"/>
         <text x="0" y="26" text-anchor="middle" font-size="14" fill="#e8efff" font-weight="bold">${it.label}</text>`;
-    } else if (it.type === "safe") {
+    } else if (it.type === "chest") {
+      // 宝箱：かまぼこ型のフタ＋本体＋中央の帯と鍵穴
       inner = `
-        <rect x="-48" y="-46" width="96" height="92" rx="7"
-              fill="rgba(143,168,255,.18)" stroke="${c}" stroke-width="2.5"/>
-        <circle cx="6" cy="0" r="15" fill="none" stroke="${c}" stroke-width="3"/>
-        <line x1="6" y1="-15" x2="6" y2="15" stroke="${c}" stroke-width="3"/>
-        <line x1="-9" y1="0" x2="21" y2="0" stroke="${c}" stroke-width="3"/>
-        <rect x="-42" y="-34" width="5" height="14" rx="2" fill="${c}" opacity=".7"/>
-        <rect x="-42" y="20" width="5" height="14" rx="2" fill="${c}" opacity=".7"/>
-        <text x="0" y="66" text-anchor="middle" font-size="16" fill="#e8efff" font-weight="bold" letter-spacing="3">${it.label}</text>`;
+        <path d="M-46,-8 V-22 A46 30 0 0 1 46,-22 V-8 Z"
+              fill="rgba(245,181,98,.16)" stroke="${c}" stroke-width="2.5"/>
+        <rect x="-46" y="-8" width="92" height="44" rx="5"
+              fill="rgba(245,181,98,.12)" stroke="${c}" stroke-width="2.5"/>
+        <line x1="-46" y1="-8" x2="46" y2="-8" stroke="${c}" stroke-width="3"/>
+        <rect x="-8" y="-34" width="16" height="70" fill="${c}" opacity=".5"/>
+        <circle cx="0" cy="-2" r="6" fill="none" stroke="${c}" stroke-width="2.5"/>
+        <text x="0" y="60" text-anchor="middle" font-size="16" fill="#e8efff" font-weight="bold" letter-spacing="3">${it.label}</text>`;
     } else if (it.type === "mirror") {
       inner = `
         <rect x="-7" y="-46" width="14" height="92" rx="3"
@@ -2064,17 +2283,22 @@ function startPress(){
   pressTimer = setTimeout(() => { staff.classList.add("open"); staffOpened = true; }, 2000);
 }
 function cancelPress(){ clearTimeout(pressTimer); }
+/* RESTART：短押し＝起動モーションを再生してホームへ／約2秒 長押し＝運営用パネル */
 $("logo").addEventListener("mousedown", startPress);
 $("logo").addEventListener("touchstart", startPress, {passive:true});
 ["mouseup","mouseleave","touchend","touchcancel"].forEach(ev => $("logo").addEventListener(ev, cancelPress));
-
-/* 短いクリック → 起動モーションを再生してホームへ（長押しで開いた直後は発火させない） */
 $("logo").addEventListener("click", () => {
   if (staffOpened || staff.classList.contains("open")) { staffOpened = false; return; }
   playBoot();
 });
 
 $("staff-close").addEventListener("click", () => staff.classList.remove("open"));
+
+/* 再起動：起動モーションを再生してホームへ戻す */
+$("staff-reboot").addEventListener("click", () => {
+  staff.classList.remove("open");
+  playBoot();
+});
 
 /* リロード後の復旧用：進行状態に合わせて手動で戻す */
 $("staff-show-clock").addEventListener("click", () => { revealClockCard(); showToast("時計のロックを解除しました"); });
@@ -2220,6 +2444,7 @@ const bootEl = $("boot");
 function playBoot(){
   if (bootPlaying) return;
   bootPlaying = true;
+  startShowClock();          // 待機画面をタップした瞬間から 19:27 で進み始める
   buildBootDom();
   bootEl.classList.remove("done");
   bootEl.style.display = "";
@@ -2347,7 +2572,7 @@ const CMD_VALID = {
 let cmdUnlocked = false;
 let cmdSlot1 = null, cmdSlot2 = null;
 let cmdRuns = 0, cmdCountVisible = false;
-const CMD_LIMIT_INIT = 10;            // 残り使用回数の初期値
+const CMD_LIMIT_INIT = 7;             // 残り使用回数の初期値
 let cmdRemaining = CMD_LIMIT_INIT;
 const usedCommands = new Set();       // 同じコマンドは1回だけ
 const signLit = { u:false, n:false, l:false, o:false, c:false, k:false };
@@ -2417,8 +2642,9 @@ function notifyClock(){
 function renderCmdUI(){
   const jp = en => (CMD_WORDS.find(w => w.en === en) || {}).jp || "";
   const s1 = $("cmd-slot1"), s2 = $("cmd-slot2");
-  s1.textContent = cmdSlot1 ? `${jp(cmdSlot1)}（${cmdSlot1}）` : "カメラ１";
-  s2.textContent = cmdSlot2 ? `${jp(cmdSlot2)}（${cmdSlot2}）` : "カメラ２";
+  // 未選択なら空にする（CSS が data-cam の「カメラ１/２」を淡く表示する）
+  s1.textContent = cmdSlot1 ? `${jp(cmdSlot1)}（${cmdSlot1}）` : "";
+  s2.textContent = cmdSlot2 ? `${jp(cmdSlot2)}（${cmdSlot2}）` : "";
   s1.classList.toggle("filled", !!cmdSlot1);
   s2.classList.toggle("filled", !!cmdSlot2);
   document.querySelectorAll(".cmd-chip").forEach(c =>
@@ -2510,13 +2736,13 @@ function executeCommand(merged){
 $("cmd-run").addEventListener("click", () => {
   sfx(520, 0.08);
   if (!cmdSlot1 && !cmdSlot2) {
-    $("cmd-effect").textContent = "カメラに映すワードを選んでください";
+    $("cmd-effect").textContent = "ワードを選んでください";
     return;
   }
   const merged = (cmdSlot1 ? cmdSlot1.slice(1) : "") + (cmdSlot2 ? cmdSlot2.slice(1) : "");
   const msg = executeCommand(merged);
   if (msg === null) return;              // 存在しないコマンド：無反応（選択も保持）
-  $("cmd-effect").textContent = "コマンドの効果：" + msg;   // 効果は左に明示
+  $("cmd-effect").textContent = msg;      // 見出し「コマンドの効果」は枠側にあるので本文には付けない
   cmdSlot1 = null; cmdSlot2 = null;      // 実行後は選択をリセット
   renderCmdUI();
 });
@@ -2544,7 +2770,7 @@ function doFullReset(){
   $("home-clock").classList.remove("notify");
   cmdSlot1 = null; cmdSlot2 = null;
   renderCmdUI();
-  $("cmd-effect").textContent = "コマンドの効果をすべてリセットしました";
+  $("cmd-effect").textContent = "すべてリセットしました";
 }
 (function resetHold(){
   const btn = $("cmd-reset");
