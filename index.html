@@ -19,14 +19,14 @@
      - 待機画面（電源ボタン）→ クリックで起動モーション → ホーム
      - 左上の「⟳ RESTART」：クリックで起動モーションを再生してホームへ
                             約2秒 長押しで運営用パネル
-     - 時計は待機画面をタップした瞬間に 19:27 からカウント開始
+     - 時計は待機画面をタップした瞬間に 19:30 からカウント開始
        （作中公演は 20:00〜20:30）
-       Ctrl + Shift 同時押しでいつでも 19:27 にリセット
+       Ctrl + Shift 同時押しでいつでも 19:30 にリセット
      - 日付は 8/30 固定（JSの CLOCK_DATE_TEXT で変更可）
      - 時計の数字は通常書体の赤。「0」だけ丸＋斜線（🚫型）… STEP裏の仕掛け
      - 配色は常に白背景。例外は evening コマンドの夜間モードのみ
-     - 簡易コマンド（STEP3〜）：ホームのワードマークを 2.5秒以内に5連続タップ、
-       または運営パネルの「コマンド解禁」でカード04が出現（長押しでは反応しない）
+     - 簡易コマンド（STEP3〜）：運営パネルの「コマンド解禁」でカード04が出現
+       （プレイヤーの操作では解禁できない。ロゴ連打・長押しとも無効）
        スロットは「カメラ１」「カメラ２」。頭文字を消して合体した語がコマンド
        同じコマンドは何度でも実行可（unlockの文字は押すたび点灯⇄消灯）
        「リセット」＝看板の点灯とコマンドの効果をすべて元に戻す
@@ -263,14 +263,24 @@
   .fn-card:focus-visible{outline:none;}
 
   /* 画面が狭い・低いPCでも崩れないように縮める（他機での表示ずれ対策） */
-  @media (max-width:900px), (max-height:680px){
-    #home .stagger{padding:14px 10px;}
-    #home-sub{margin:10px 0 24px;}
-    .fn-card{width:168px; padding:12px 14px 10px; gap:8px;}
-    .fc-screen{height:100px;}
-    .fc-screen .fc-icon{width:48px; height:48px;}
-    .fc-name{font-size:.92rem; letter-spacing:.2em; text-indent:.2em;}
-    #ticker{margin-top:22px;}
+  /* 画面が狭い／低いときは、カードの一部だけを縮めると縦につぶれて見えるので、
+     余白から先に詰め、カードは縦横の比を保ったまま等倍で小さくする */
+  @media (max-height:760px){
+    #home .stagger{padding:16px 12px;}
+    #home-sub{margin:12px 0 30px;}
+    #ticker{margin-top:28px;}
+  }
+  @media (max-height:660px){
+    #home .stagger{padding:10px 12px;}
+    #home-sub{margin:8px 0 18px; font-size:.62rem;}
+    #home-logo{font-size:clamp(1.9rem, 4.4vw, 2.8rem);}
+    #ticker{margin-top:16px;}
+    .fn-card{width:clamp(150px, 17vw, 200px); padding:13px 15px 12px; gap:10px;}
+    .fc-screen{height:106px;}              /* カード幅と一緒に縮めて比率を保つ */
+    .fc-screen .fc-icon{width:52px; height:52px;}
+  }
+  @media (max-width:900px){
+    .fn-card{width:clamp(150px, 30vw, 200px);}
   }
   #ticker{
     margin-top:56px; font-family:var(--mono); font-size:.68rem;
@@ -1151,7 +1161,7 @@
     <h3>STAFF PANEL</h3>
     <label>
       指定時刻から進行：
-      <input type="time" id="staff-time" value="19:27" step="60">
+      <input type="time" id="staff-time" step="60">
     </label>
     <label>
       <button id="staff-fs-btn" type="button">全画面を解除する</button>
@@ -1164,7 +1174,7 @@
     <label>
       <button id="staff-reboot" type="button">再起動（起動モーションを再生）</button>
     </label>
-    <span class="note">待機画面をタップした瞬間から作中時刻 <b>19:27</b> で進行します（作中公演は 20:00〜20:30）。<b>Ctrl + Shift</b> を同時押しすると、いつでも 19:27 にリセットできます。全画面表示の解除・再開は上のボタンで即座に切り替わります（解除中はタッチしても全画面に戻りません）。</span>
+    <span class="note">待機画面をタップした瞬間から作中時刻 <b class="start-time">19:30</b> で進行します（作中公演は 20:00〜20:30）。<b>Ctrl + Shift</b> を同時押しすると、いつでも <b class="start-time">19:30</b> にリセットできます。全画面表示の解除・再開は上のボタンで即座に切り替わります（解除中はタッチしても全画面に戻りません）。</span>
     <div class="row">
       <button id="staff-close">閉じる</button>
       <button id="staff-apply" class="primary">設定</button>
@@ -2036,10 +2046,11 @@ function colonSVG(cx, visible, scale = 1){
 }
 
 /* 時刻の供給
-   初期状態：待機画面をタップした瞬間に作中時刻 19:27 から進行
-   Ctrl + Shift 同時押しでいつでも 19:27 にリセット
+   初期状態：待機画面をタップした瞬間に作中時刻 19:30 から進行
+   Ctrl + Shift 同時押しでいつでも 19:30 にリセット
    運営用パネル（ロゴ長押し）で任意時刻にも変更可能 */
-const SHOW_START = { h: 19, m: 27 };           // 待機画面をタップした瞬間の作中時刻
+/* ★開始時刻はここだけ変えればOK（運営パネルの初期値と説明文も自動で追随します） */
+const SHOW_START = { h: 19, m: 30 };           // 待機画面をタップした瞬間の作中時刻
 const CLOCK_DATE_TEXT = "08.30 SUN";           // 日付は 8/30 固定（曜日表記は自由に変更可）
 
 let clockMode = "manual";     // "real" | "manual"
@@ -2059,7 +2070,7 @@ function currentTime(){
     const d = new Date();
     return { h: d.getHours(), m: d.getMinutes(), s: d.getSeconds() };
   }
-  const elapsed = clockStarted ? (Date.now() - manualBase) : 0;   // 開始前は19:27で静止
+  const elapsed = clockStarted ? (Date.now() - manualBase) : 0;   // 開始前は19:30で静止
   const total = (manualStart + elapsed) % 86400000;
   const h = Math.floor(total / 3600000);
   const m = Math.floor((total % 3600000) / 60000);
@@ -2104,14 +2115,14 @@ function renderClock(){
 setInterval(renderClock, 250);
 renderClock();
 
-/* Ctrl + Shift → 作中時刻 19:27 にリセット */
+/* Ctrl + Shift → 作中時刻 19:30 にリセット */
 function resetShowTime(){
   clockMode   = "manual";
-  clockStarted = true;   // リセット＝その瞬間から19:27で再スタート
+  clockStarted = true;   // リセット＝その瞬間から19:30で再スタート
   manualStart = (SHOW_START.h * 3600 + SHOW_START.m * 60) * 1000;
   manualBase  = Date.now();
   renderClock();
-  showToast("TIME RESET → 19:27");
+  showToast("TIME RESET → " + showStartText());
 }
 document.addEventListener("keydown", e => {
   if (e.repeat) return;
@@ -2120,6 +2131,17 @@ document.addEventListener("keydown", e => {
     resetShowTime();
   }
 });
+
+/* 開始時刻の文字列（"19:30" 形式）。運営パネルの表示にも使う */
+function showStartText(){
+  return String(SHOW_START.h).padStart(2,"0") + ":" + String(SHOW_START.m).padStart(2,"0");
+}
+/* 運営パネルの初期値と説明文に、上の SHOW_START を反映する */
+(function applyShowStart(){
+  const t = showStartText();
+  $("staff-time").value = t;
+  document.querySelectorAll(".start-time").forEach(el => { el.textContent = t; });
+})();
 
 /* トースト通知 */
 let toastTimer = null;
@@ -2444,7 +2466,7 @@ const bootEl = $("boot");
 function playBoot(){
   if (bootPlaying) return;
   bootPlaying = true;
-  startShowClock();          // 待機画面をタップした瞬間から 19:27 で進み始める
+  startShowClock();          // 待機画面をタップした瞬間から 19:30 で進み始める
   buildBootDom();
   bootEl.classList.remove("done");
   bootEl.style.display = "";
@@ -2539,7 +2561,7 @@ function setNightMode(on){
 
 /* ================================================================
    簡易コマンド（STEP3〜）
-   - 解禁：ホームのワードマークを 2.5秒以内に5連続タップ／運営パネル
+   - 解禁：運営パネルの「コマンド解禁」ボタンのみ
    - スロットは「カメラ１」「カメラ２」。ワードは頭文字が消えて合体
    - 存在しないコマンドは無反応。同じコマンドは何度でも実行できる
    - ダミーも含め、すべてのコマンドが看板の文字をトグルする
@@ -2606,17 +2628,9 @@ function notifyClock(){
   showToast("時計が追加されました ─ ホームで確認できます");
 }
 
-(function commandGesture(){
-  // 解禁は「2.5秒以内に5連続タップ」のみ（長押しでは反応しない）
-  const wm = $("home-logo");
-  let taps = 0, tapT = null;
-  wm.addEventListener("click", () => {
-    taps++;
-    clearTimeout(tapT);
-    tapT = setTimeout(() => { taps = 0; }, 2500);
-    if (taps >= 5) { taps = 0; unlockCommandMode(); }
-  });
-})();
+/* ホームのワードマークを連打しても解禁されないようにしてある。
+   コマンド機能を出すのは運営パネルの「コマンド解禁」ボタンだけ
+   （運営パネル＝左上 ⟳ RESTART を約2秒 長押し）。 */
 
 /* --- チップ生成と選択 --- */
 (function buildCmdChips(){
