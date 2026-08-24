@@ -152,6 +152,21 @@
     0%,100%{box-shadow:0 0 0 0 rgba(111,141,255,0);}
     50%{box-shadow:0 0 0 3px rgba(111,141,255,.32), 0 0 18px rgba(111,141,255,.3);}
   }
+  /* 設定パネル内の「取扱説明書を見る」にも同じ NEW を付ける */
+  #settings label{position:relative;}
+  #set-manual.newmark{
+    border-color:rgba(111,141,255,.6); color:var(--ice);
+    background:rgba(111,141,255,.12);
+    animation:newpulse 1.8s ease-in-out infinite;
+  }
+  #set-manual.newmark::after{
+    content:"NEW"; position:absolute; top:-8px; right:-10px;
+    font-family:var(--mono); font-size:.5rem; font-weight:700; letter-spacing:.14em;
+    color:#0a0f1e; background:var(--pulse);
+    border-radius:999px; padding:2px 7px;
+    box-shadow:0 0 14px var(--pulse-soft);
+  }
+  #set-manual{position:relative;}
   #settings-btn:active{transform:scale(.95);}
   #settings-btn:focus-visible{outline:2px solid var(--pulse); outline-offset:2px;}
 
@@ -979,7 +994,7 @@
         <button class="fn-card locked" id="home-clock" data-open="app-clock">
           <span class="fc-top"><span class="fc-idx">01</span><span class="fc-en">CLOCK</span></span>
           <span class="fc-screen">
-            <svg id="home-clock-svg" viewBox="0 0 700 160" aria-hidden="true"></svg>
+            <svg id="home-clock-svg" viewBox="0 0 520 160" aria-hidden="true"></svg>
             <span id="home-clock-date"></span>
             <svg class="fc-lockicon" viewBox="0 0 64 64" fill="none" stroke="#8fa0c4"
                  stroke-width="4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -1705,11 +1720,8 @@ const DICT_TEXT = `
 ぎん、銀 = silver
 
 # ===== 数 =====
-かず、数 = number
+# ※数そのもの（ぜろ〜まん）は意図的に登録しない。翻訳させたくないため
 じゅう、銃、鉄砲 = gun
-ひゃく、百 = hundred
-せん、千 = thousand
-まん、万 = ten thousand
 はんぶん、半分 = half
 
 # ===== 学校・仕事 =====
@@ -2151,7 +2163,13 @@ function renderClock(){
     }
   });
   clockSVG.innerHTML = svg;
-  homeClockSVG.innerHTML = svg;   // ホームのウィジェットにも同じ表示（0の🚫も同一）
+
+  // ホームのウィジェットは「時：分」だけ（秒は出さない）
+  let hsvg = "";
+  [...(hh + ":" + mm)].forEach((ch, i) => {
+    hsvg += (ch === ":") ? colonSVG(CLOCK_SLOTS[i], blink) : digitSVG(ch, CLOCK_SLOTS[i]);
+  });
+  homeClockSVG.innerHTML = hsvg;
 }
 setInterval(renderClock, 250);
 renderClock();
@@ -2684,7 +2702,8 @@ function unlockCommandMode(){
     MAP_ILLUSTS.push(MAP_ILLUST_LATE);
     drawMap(false);
   }
-  $("settings-btn").classList.add("newmark");    // ⚙設定に NEW を付けて取扱説明書へ誘導
+  $("settings-btn").classList.add("newmark");    // ⚙設定に NEW を付けて…
+  $("set-manual").classList.add("newmark");      // …設定の中の「取扱説明書」にも NEW
   showToast("新機能が追加されました ─ ⚙ 設定 の取扱説明書をご覧ください");
 }
 
@@ -2863,6 +2882,7 @@ function doFullReset(){
   $("home-clock").classList.remove("notify");
   hideMission();                    // MISSION COMPLETE の表示も消す
   $("settings-btn").classList.remove("newmark");
+  $("set-manual").classList.remove("newmark");
   cmdSlot1 = null; cmdSlot2 = null;
   renderCmdUI();
   $("cmd-effect").textContent = "すべてリセットしました";
@@ -3100,6 +3120,7 @@ function manualURL(){
 }
 $("set-manual").addEventListener("click", () => {
   $("settings-btn").classList.remove("newmark");   // 取扱説明書を開いたら NEW を消す
+  $("set-manual").classList.remove("newmark");
   $("manual-frame").src = manualURL();
   $("settings").classList.remove("open");
   $("manual-view").classList.add("open");
