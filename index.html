@@ -435,11 +435,6 @@
     box-shadow:0 0 0 #070b16, 0 1px 4px rgba(0,0,0,.4),
                inset 0 1px 0 rgba(255,255,255,.06), 0 0 18px rgba(111,141,255,.4);
   }
-  #kbd-num .kbd-key{
-    height:32px; font-size:.84rem; color:var(--sub); border-radius:8px;
-    box-shadow:0 2px 0 #070b16, 0 3px 8px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.06);
-  }
-  #kbd-num .kbd-key:active{transform:translateY(2px); box-shadow:0 0 0 #070b16, 0 0 14px rgba(111,141,255,.35);}
   .kbd-key.bs{flex:1.6; font-size:1.1rem; color:var(--sub);}
   .kbd-key.fn{flex:1.5; font-family:inherit; font-size:.9rem; text-transform:none; color:var(--sub);}
   .kbd-key.dash{flex:3.6;}   /* 「ー」をスペースキー位置に */
@@ -740,29 +735,31 @@
   /* ---------- MISSION COMPLETE（看板の6文字が全点灯） ---------- */
   #mission{
     position:fixed; inset:0; z-index:72;
-    display:flex; align-items:center; justify-content:center;
+    display:flex; align-items:flex-end; justify-content:center;
+    padding-bottom:min(9vh, 84px);
     pointer-events:none; opacity:0;
   }
   #mission.show{pointer-events:auto; cursor:pointer;}   /* 表示中はタップを拾って閉じる */
   #mission .tapcap{
-    position:absolute; bottom:16%;
-    font-family:var(--mono); font-size:.66rem; letter-spacing:.3em;
-    color:rgba(143,160,196,.75);
+    position:absolute; bottom:min(4vh, 34px);
+    font-family:var(--mono); font-size:.62rem; letter-spacing:.3em;
+    color:rgba(143,160,196,.7);
   }
   #mission span.msg{
     font-family:var(--mono); font-weight:700;
-    font-size:clamp(1.7rem, 4.6vw, 2.9rem);
-    letter-spacing:.4em; text-indent:.4em;
+    font-size:clamp(1.1rem, 2.6vw, 1.7rem);
+    letter-spacing:.34em; text-indent:.34em;
     color:#d5e3ff;
-    text-shadow:0 0 26px rgba(150,180,255,.85), 0 0 80px rgba(111,141,255,.6);
-    padding:20px 44px;
+    text-shadow:0 0 20px rgba(150,180,255,.8), 0 0 60px rgba(111,141,255,.5);
+    padding:13px 34px;
     border:1px solid rgba(150,180,255,.7);
-    border-radius:6px;
-    background:rgba(10,15,28,.72);
+    border-radius:999px;
+    background:rgba(10,15,28,.86);
+    box-shadow:0 10px 34px rgba(0,0,0,.5), 0 0 26px rgba(111,141,255,.25);
   }
-  #mission.show{opacity:1; animation:missionin .6s cubic-bezier(.2,.9,.3,1.3) both;}
+  #mission.show{opacity:1; animation:missionin .5s cubic-bezier(.2,.9,.3,1.3) both;}
   #mission.show .tapcap{animation:capfade 2.2s ease-in-out infinite;}
-  @keyframes missionin{from{opacity:0; transform:scale(.9);} to{opacity:1; transform:scale(1);}}
+  @keyframes missionin{from{opacity:0; transform:translateY(16px);} to{opacity:1; transform:none;}}
 
   /* ---------- 棒人間の演出（action） ---------- */
   #runner{
@@ -1063,7 +1060,6 @@
       </div>
       <!-- タッチキーボード（ローマ字入力。文字キーはJSで生成） -->
       <div id="kbd" aria-label="タッチキーボード">
-        <div class="kbd-row" id="kbd-num"></div>
         <div class="kbd-row" data-keys="qwertyuiop"></div>
         <div class="kbd-row indent1" data-keys="asdfghjkl"></div>
         <div class="kbd-row indent2" data-keys="zxcvbnm" data-extra="bs"></div>
@@ -1710,16 +1706,7 @@ const DICT_TEXT = `
 
 # ===== 数 =====
 かず、数 = number
-ぜろ、零、0 = zero
-いち、一、1 = one
-に、二、2 = two
-さん、三、3 = three
-よん、し、四、4 = four
-ご、五、5 = five
-ろく、六、6 = six
-はち、八、8 = eight
-きゅう、九、9 = nine
-じゅう、十、10 = ten
+じゅう、銃、鉄砲 = gun
 ひゃく、百 = hundred
 せん、千 = thousand
 まん、万 = ten thousand
@@ -2020,13 +2007,7 @@ trInput.addEventListener("keydown", e => { if (e.key === "Enter") translate(); }
   /* 物理キーボードで直接編集された場合は、その内容を確定済みとして同期 */
   trInput.addEventListener("input", () => { kana = trInput.value; pend = ""; });
 
-  /* ---- キーの生成 ---- */
-  const num = $("kbd-num");
-  for (const ch of "1234567890") {
-    const b = document.createElement("button");
-    b.className = "kbd-key"; b.textContent = ch; b.dataset.digit = ch;
-    num.appendChild(b);
-  }
+  /* ---- キーの生成（数字キーは置かない） ---- */
   document.querySelectorAll("#kbd .kbd-row[data-keys]").forEach(row => {
     for (const ch of row.dataset.keys) {
       const b = document.createElement("button");
@@ -2050,9 +2031,6 @@ trInput.addEventListener("keydown", e => { if (e.key === "Enter") translate(); }
       pend += b.dataset.letter;
       const [out, rest] = convert(pend);
       kana += out; pend = rest;
-    } else if (b.dataset.digit) {
-      finalizePend();
-      kana += b.dataset.digit;
     } else if (b.dataset.ch) {              // 「ー」
       finalizePend();
       kana += b.dataset.ch;
@@ -2264,7 +2242,7 @@ const MAP_ITEMS = [
 function drawMap(animate){
   const svg = $("map-svg");
   const C = { camera:"#8fa8ff", illust:"#f5b562", mirror:"#9db7ff", chest:"#f5b562", item:"#5d6b8c" };
-  const GRID = "rgba(150,178,255,.07)";
+  const GRID = "rgba(150,178,255,.05)";
   const MONO = "'Cascadia Mono','Consolas','Courier New',monospace";
   const R = MAP_ROOM;
   let s = "";
@@ -2275,31 +2253,40 @@ function drawMap(animate){
 
   // ブースの外壁（上の壁だけ入口ぶんを空ける／描き込みアニメ対象）
   const rx = R.x, ry = R.y, rr = R.x + R.w, rb = R.y + R.h;
+  // 部屋の床（うっすら塗って室内と室外を分ける）
+  s += `<rect x="${rx}" y="${ry}" width="${R.w}" height="${R.h}" rx="4"
+              fill="rgba(120,150,220,.045)"/>`;
+
   // 左の壁は入口なので描かない（上・右・下の3辺だけ）
   s += `<path class="wall" pathLength="100"
           d="M${rx},${ry} H${rr} V${rb} H${rx}"
-          fill="none" stroke="#9db7ff" stroke-width="3.5" stroke-linejoin="round"/>`;
+          fill="none" stroke="#9db7ff" stroke-width="5" stroke-linejoin="round"/>`;
 
   // 入口（左の1辺すべて。机と平行な縦向き）
   s += `<g class="pop" style="animation-delay:.85s">
           <line x1="${rx}" y1="${MAP_DOOR.y1}" x2="${rx}" y2="${MAP_DOOR.y2}"
-                stroke="#f5b562" stroke-width="2.5" stroke-dasharray="9 7"/>
-          <text x="${rx - 12}" y="${(MAP_DOOR.y1 + MAP_DOOR.y2) / 2}" text-anchor="middle"
-                font-size="15" fill="#8fa0c4" letter-spacing="4"
-                transform="rotate(-90 ${rx - 12} ${(MAP_DOOR.y1 + MAP_DOOR.y2) / 2})">入口</text>
+                stroke="#f5b562" stroke-width="4" stroke-dasharray="14 9" opacity=".9"/>
+          <text x="${rx - 20}" y="${(MAP_DOOR.y1 + MAP_DOOR.y2) / 2}" text-anchor="middle"
+                font-size="17" font-weight="bold" fill="#f5b562" letter-spacing="6"
+                transform="rotate(-90 ${rx - 20} ${(MAP_DOOR.y1 + MAP_DOOR.y2) / 2})">入口</text>
         </g>`;
 
   // 部屋の外（左側）に2列で書き出す：置かれるイラスト ／ 置かれるもの
   const LY = 116;
   const drawList = (x, title, rows, dot) => {
-    let g = `<text x="${x}" y="${LY - 34}" font-size="14" fill="#e8efff" letter-spacing="2">${title}</text>
-             <line x1="${x}" y1="${LY - 22}" x2="${x + 122}" y2="${LY - 22}" stroke="rgba(245,181,98,.45)"/>`;
+    const w = 126, h = 46 + rows.length * 27;
+    // 見出し付きのパネルにして、図と一覧をはっきり分ける
+    let g = `<rect x="${x - 12}" y="${LY - 50}" width="${w}" height="${h}" rx="10"
+                   fill="rgba(13,19,35,.55)" stroke="rgba(150,178,255,.14)"/>
+             <rect x="${x - 12}" y="${LY - 50}" width="${w}" height="26" rx="10"
+                   fill="${dot}" opacity=".14"/>
+             <text x="${x - 2}" y="${LY - 33}" font-size="12.5" fill="#e8efff" letter-spacing="1.5">${title}</text>`;
     rows.forEach((it, i) => {
-      const y = LY + i * 26;
-      g += `<circle cx="${x + 5}" cy="${y - 5}" r="3.6" fill="${dot}" opacity=".85"/>
-            <text x="${x + 18}" y="${y}" font-size="13" fill="#e8efff">
+      const y = LY + i * 27;
+      g += `<circle cx="${x + 2}" cy="${y - 5}" r="3.4" fill="${dot}" opacity=".9"/>
+            <text x="${x + 14}" y="${y}" font-size="13" fill="#e8efff">
               <tspan font-family="${MONO}" fill="${dot}">${it.en}</tspan>
-              <tspan fill="#8fa0c4"> ─ </tspan>${it.jp}</text>`;
+              <tspan fill="rgba(143,160,196,.7)"> ─ </tspan>${it.jp}</text>`;
     });
     return g;
   };
@@ -2311,10 +2298,12 @@ function drawMap(animate){
   // 机
   MAP_DESKS.forEach((d, i) => {
     s += `<g class="pop" style="animation-delay:${(0.95 + i * 0.1).toFixed(2)}s">
-            <rect x="${d.x}" y="${d.y}" width="${d.w}" height="${d.h}" rx="8"
-                  fill="rgba(150,178,255,.05)" stroke="#5d6b8c" stroke-width="2"/>
-            <text x="${d.x + 10}" y="${d.y + d.h - 8}" font-size="12"
-                  fill="#8fa0c4" letter-spacing="3">机</text>
+            <rect x="${d.x}" y="${d.y}" width="${d.w}" height="${d.h}" rx="10"
+                  fill="rgba(150,178,255,.10)" stroke="#8494b8" stroke-width="2.5"/>
+            <rect x="${d.x + 6}" y="${d.y + 6}" width="${d.w - 12}" height="${d.h - 12}" rx="7"
+                  fill="none" stroke="rgba(150,178,255,.18)" stroke-width="1"/>
+            <text x="${d.x + 14}" y="${d.y + 26}" font-size="14"
+                  fill="#aab8d6" letter-spacing="4">机</text>
           </g>`;
   });
 
