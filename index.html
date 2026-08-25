@@ -601,7 +601,7 @@
   #cmd-run:active{transform:scale(.96);}
   #cmd-clear{flex:0 0 auto; padding:10px 18px;}
 
-  /* --- 状態（残り回数・使用回数・リセット） --- */
+  /* --- 状態（残り回数・リセット） --- */
   #cmd-status{display:flex; align-items:stretch; gap:9px;}
   .stat{
     flex:1 1 0; min-width:0;
@@ -614,8 +614,6 @@
   .stat i{font-style:normal; font-size:.66rem; letter-spacing:.12em; color:var(--sub);}
   .stat.low{border-color:rgba(255,107,87,.55); background:rgba(255,107,87,.08);}
   .stat.low b{color:var(--alert);}
-  .stat.used{border-color:rgba(245,181,98,.45); background:rgba(245,181,98,.08);}
-  .stat.used b{color:var(--amber);}
   /* 全リセット：警告色＋1.6秒の長押し（押している間ゲージが伸びる） */
   #cmd-reset{
     position:relative; overflow:hidden; flex:1 1 0; min-width:0;
@@ -1160,9 +1158,6 @@
           <div id="cmd-status">
             <span class="stat" id="stat-remain">
               <b id="cmd-runs">7</b><i>残り回数</i>
-            </span>
-            <span class="stat used" id="stat-used" hidden>
-              <b id="cmd-used">0</b><i>使用回数</i>
             </span>
             <button id="cmd-reset" type="button" hidden>
               <span class="rs-main">⟲ 長押しでリセット</span>
@@ -2673,7 +2668,7 @@ const CMD_WORDS = [
 const CMD_VALID = {
   laptop:  { msg:"端末に簡易コマンドリセットボタンが追加された。" },
   ticket:  { msg:"コマンドの残り使用回数が 1 回増えた。" },
-  count:   { msg:"端末に時計が追加された。（コマンドの使用回数も表示されます）" },
+  count:   { msg:"端末に時計が追加された。" },
   action:  { msg:"画面の下を棒人間が走っていった。" },
   rain:    { msg:"端末に雨が降りはじめた。" },
   hiphop:  { msg:"端末から音楽が流れはじめた。" },
@@ -2683,7 +2678,7 @@ const CMD_VALID = {
 
 let cmdUnlocked = false;
 let cmdSlot1 = null, cmdSlot2 = null;
-let cmdRuns = 0, cmdCountVisible = false;
+let cmdRuns = 0;                      // 内部の実行回数（画面には出さない）
 const CMD_LIMIT_INIT = 7;             // 残り使用回数の初期値
 let cmdRemaining = CMD_LIMIT_INIT;
 const usedCommands = new Set();       // 同じコマンドは1回だけ
@@ -2763,9 +2758,6 @@ function renderCmdUI(){
     c.classList.toggle("sel", c.dataset.en === cmdSlot1 || c.dataset.en === cmdSlot2));
   $("cmd-runs").textContent = cmdRemaining;
   $("stat-remain").classList.toggle("low", cmdRemaining <= 3);   // 残りわずかは赤く
-  // 端末の使用回数（count コマンドで表示されるようになる）
-  $("cmd-used").textContent = cmdRuns;
-  $("stat-used").hidden = !cmdCountVisible;
 }
 
 /* 状態が変わらなかった文字を一瞬だけ点滅させる
@@ -2828,10 +2820,9 @@ function executeCommand(merged){
   let msg = entry.msg;
   if (merged === "rain")    startRain();
   if (merged === "action")  startRunner();               // 画面下部を棒人間が走る
-  if (merged === "count") {
-    cmdCountVisible = true;
-    // 時計はこのコマンドで追加される
-    if (!clockCardUnlocked) { revealClockCard(); showClockOn(); notifyClock(); }
+  // 時計はこのコマンドで追加される
+  if (merged === "count" && !clockCardUnlocked) {
+    revealClockCard(); showClockOn(); notifyClock();
   }
   if (merged === "hiphop")  playHiphop();
   if (merged === "hear")    { sfxOn = true; sfx(880, 0.09); }
@@ -2872,7 +2863,6 @@ function doFullReset(){
   stopHiphop();                     // 音楽を止める
   sfxOn = false;                    // 効果音を無効に
   setNightMode(false);              // 配色を白へ
-  cmdCountVisible = false;
   cmdRuns = 0;
   usedCommands.clear();             // 使用済みの記録を消す
   cmdRemaining = CMD_LIMIT_INIT;    // 残り使用回数を戻す
