@@ -17,8 +17,7 @@
   /* ============================================================
      「公演開始まであと30分」用 端末ソフト  ―  PARALLELS-OS
      - 待機画面（電源ボタン）→ クリックで起動モーション → ホーム
-     - 左上の「⟳ RESTART」：クリックで起動モーションを再生してホームへ
-                            約2秒 長押しで運営用パネル
+     - 運営用パネル：左上のロゴを約2秒 長押しで開く
      - 時計は待機画面をタップした瞬間に 19:30 からカウント開始
        （作中公演は 20:00〜20:30）
        Ctrl + Shift 同時押しでいつでも 19:30 にリセット
@@ -31,7 +30,7 @@
        同じコマンドは何度でも実行可（unlockの文字は押すたび点灯⇄消灯）
        「リセット」＝看板の点灯とコマンドの効果をすべて元に戻す
        効果は画面下の「コマンドの効果」欄に表示
-       看板の6文字が全点灯すると MISSION COMPLETE を表示
+       電気看板の6文字が全点灯すると MISSION COMPLETE を表示
        ダミー：hiphop(ship+shop)=hiphop.aac をループ再生（リセットで停止）/
                hear(she+car)=以降のタップに効果音 /
                evening(seven+ring)=夜間モード（画面が黒くなる）
@@ -68,6 +67,8 @@
   /* 明るさは最後に掛ける（設定のスライダーが --ui-bright を書き換える） */
   body{filter:brightness(var(--ui-bright,1));}
   body.theme-invert{filter:invert(1) hue-rotate(180deg) brightness(var(--ui-bright,1));}
+  /* 夜間モード（evening）：真っ黒にせず、少し持ち上げて見やすくする */
+  body.night{filter:brightness(calc(var(--ui-bright,1) * 1.22)) contrast(1.06) saturate(1.05);}
   [hidden]{display:none !important;}
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{height:100%; overscroll-behavior:none;}   /* 端からの引っ張り操作を抑止 */
@@ -116,19 +117,12 @@
     background:linear-gradient(180deg, rgba(11,17,32,.9), rgba(11,17,32,.35));
     backdrop-filter:blur(6px);
   }
+  /* 左上のロゴ（見た目はただの表示。約2秒 長押しでスタッフパネル） */
   #logo{
     font-family:var(--mono); font-size:.72rem; font-weight:700;
-    letter-spacing:.24em; text-indent:.06em;
-    color:var(--sub); background:transparent;
-    border:1px solid var(--line); border-radius:9px;
-    padding:5px 14px; cursor:pointer;
-    transition:border-color .2s, color .2s, box-shadow .2s, transform .08s;
+    letter-spacing:.28em; color:rgba(143,160,196,.55);
+    user-select:none; -webkit-user-select:none;
   }
-  #logo:hover{
-    border-color:rgba(111,141,255,.55); color:var(--ice);
-    box-shadow:0 0 14px rgba(111,141,255,.18);
-  }
-  #logo:active{transform:scale(.95);}
   #statusbar .right{display:flex; align-items:center; gap:18px;}
   #settings-btn{
     font-family:var(--mono); font-size:.7rem; font-weight:700;
@@ -548,7 +542,7 @@
   .sg{
     font-family:var(--mono); font-weight:700; font-size:2.3rem;
     color:transparent;                                   /* 未点灯の文字は隠す（答えバレ防止） */
-    border-bottom:3px solid rgba(150,178,255,.16);       /* 6つの空き枠だけ見せる */
+    border-bottom:3px solid rgba(150,178,255,.16);       /* 未点灯の6文字は下線だけ見せる */
     padding:0 3px;
     transition:color .3s, text-shadow .3s, border-color .3s;
   }
@@ -743,6 +737,47 @@
     14%{opacity:1; transform:scale(1);}
     80%{opacity:1; transform:scale(1);}
     100%{opacity:0; transform:scale(1.04);}
+  }
+
+  /* ---------- スポットライト案内（新機能の追加時） ----------
+     暗幕は #spot-hole の巨大な box-shadow で作る。穴の部分だけが明るく残る */
+  /* ⚙設定を開くまで出したままにする。クリックは下の要素へ通す
+     （pointer-events:none にしないと、照らしている設定ボタン自体が押せない） */
+  #spot{
+    position:fixed; inset:0; z-index:96; display:none; pointer-events:none;
+  }
+  #spot.show{display:block; animation:spotin .45s ease both;}
+  @keyframes spotin{from{opacity:0;} to{opacity:1;}}
+  #spot-hole{
+    position:absolute; border-radius:14px;
+    box-shadow:0 0 0 4000px rgba(4,7,14,.82), 0 0 26px 6px rgba(111,141,255,.55);
+    border:2px solid var(--pulse);
+    animation:spotpulse 1.8s ease-in-out infinite;
+  }
+  @keyframes spotpulse{
+    0%,100%{box-shadow:0 0 0 4000px rgba(4,7,14,.82), 0 0 20px 3px rgba(111,141,255,.45);}
+    50%{box-shadow:0 0 0 4000px rgba(4,7,14,.82), 0 0 34px 10px rgba(111,141,255,.75);}
+  }
+  #spot-msg{
+    position:absolute; display:flex; flex-direction:column; gap:9px;
+    max-width:min(420px, 76vw);
+    padding:20px 24px;
+    background:linear-gradient(180deg, rgba(24,33,56,.98), rgba(13,19,35,.98));
+    border:1px solid rgba(111,141,255,.5); border-radius:16px;
+    box-shadow:0 24px 60px rgba(0,0,0,.6);
+  }
+  #spot-msg::before{                       /* 吹き出しの三角（上向き） */
+    content:""; position:absolute; top:-9px; right:44px;
+    width:16px; height:16px; transform:rotate(45deg);
+    background:rgba(24,33,56,.98);
+    border-left:1px solid rgba(111,141,255,.5); border-top:1px solid rgba(111,141,255,.5);
+  }
+  #spot-msg b{font-size:1.02rem; letter-spacing:.06em; color:var(--ice);}
+  #spot-msg span{font-size:.88rem; line-height:1.8; color:var(--sub);}
+  #spot-msg span em{font-style:normal; color:var(--pulse); font-weight:700;}
+  #spot-msg i{
+    font-style:normal; font-family:var(--mono); font-size:.6rem;
+    letter-spacing:.24em; color:rgba(143,160,196,.6); margin-top:2px;
   }
 
   /* ---------- MISSION COMPLETE（看板の6文字が全点灯） ---------- */
@@ -971,9 +1006,9 @@
 
 <div id="device">
 
-  <!-- ステータスバー（RESTART：クリック=起動モーション再生してホームへ / 長押し2秒=運営用パネル） -->
+  <!-- ステータスバー（左上のロゴ：約2秒 長押しで運営用パネル） -->
   <div id="statusbar">
-    <button id="logo">⟳ RESTART</button>
+    <span id="logo">PARALLELS-OS</span>
     <span class="right">
       <button id="settings-btn" aria-label="設定を開く">⚙ 設定</button>
     </span>
@@ -1060,7 +1095,7 @@
       <div id="tr-form">
         <span id="tr-label">ローマ字で入力 — ROMAJI INPUT</span>
         <div id="tr-row">
-          <input id="tr-input" type="text" inputmode="none" autocomplete="off" placeholder="例：ringo → りんご">
+          <input id="tr-input" type="text" inputmode="none" autocomplete="off" placeholder="例：buta → ぶた">
           <button id="tr-go">翻訳</button>
         </div>
       </div>
@@ -1161,7 +1196,7 @@
             </span>
             <button id="cmd-reset" type="button" hidden>
               <span class="rs-main">⟲ 長押しでリセット</span>
-              <span class="rs-sub">効果を全て消す</span>
+              <span class="rs-sub">効果をすべて消し、電気看板の文字をすべて消灯</span>
             </button>
           </div>
 
@@ -1188,12 +1223,12 @@
     </label>
     <label class="slider">
       <span class="lb">音量</span>
-      <input id="set-vol" type="range" min="0" max="100" step="5" value="85" aria-label="音量">
-      <span class="val" id="set-vol-val">85</span>
+      <input id="set-vol" type="range" min="0" max="50" step="5" value="30" aria-label="音量">
+      <span class="val" id="set-vol-val">30</span>
     </label>
     <label class="slider">
       <span class="lb">明るさ</span>
-      <input id="set-bright" type="range" min="55" max="130" step="5" value="100" aria-label="画面の明るさ">
+      <input id="set-bright" type="range" min="55" max="100" step="5" value="100" aria-label="画面の明るさ">
       <span class="val" id="set-bright-val">100</span>
     </label>
     <div class="row">
@@ -1232,9 +1267,20 @@
     </label>
     <span class="note">待機画面をタップした瞬間から作中時刻 <b class="start-time">19:30</b> で進行します（作中公演は 20:00〜20:30）。<b>Ctrl + Shift</b> を同時押しすると、いつでも <b class="start-time">19:30</b> にリセットできます。全画面表示の解除・再開は上のボタンで即座に切り替わります（解除中はタッチしても全画面に戻りません）。</span>
     <div class="row">
-      <button id="staff-close">閉じる</button>
-      <button id="staff-apply" class="primary">設定</button>
+      <button id="staff-apply">時計をこの時刻に設定</button>
+      <button id="staff-dismiss">閉じる</button>
+      <button id="staff-close" class="primary">設定</button>
     </div>
+  </div>
+</div>
+
+<!-- 演出：新機能の案内（⚙設定にスポットライトを当てる） -->
+<div id="spot" aria-hidden="true">
+  <div id="spot-hole"></div>
+  <div id="spot-msg">
+    <b>新しい機能が追加されました</b>
+    <span>使い方は <em>⚙ 設定</em> の中の<br>「取扱説明書」で確認できます</span>
+    <i>⚙ 設定 を開くと閉じます</i>
   </div>
 </div>
 
@@ -2092,7 +2138,7 @@ function colonSVG(cx, visible, scale = 1){
    運営用パネル（ロゴ長押し）で任意時刻にも変更可能 */
 /* ★開始時刻はここだけ変えればOK（運営パネルの初期値と説明文も自動で追随します） */
 const SHOW_START = { h: 19, m: 30 };           // 待機画面をタップした瞬間の作中時刻
-const CLOCK_DATE_TEXT = "08.30 SUN";           // 日付は 8/30 固定（曜日表記は自由に変更可）
+const CLOCK_DATE_TEXT = "08.28 FRI";           // 日付（曜日表記は自由に変更可）
 
 let clockMode = "manual";     // "real" | "manual"
 let clockStarted = false;     // 最初にホーム画面が開いた瞬間から進み始める
@@ -2222,26 +2268,32 @@ const MAP_DESKS = [
 ];
 /* 置かれるイラスト（英語 ― 日本語）。行を足し引きするだけで一覧に反映されます */
 const MAP_ILLUSTS = [
-  { en:"Bear",  jp:"クマ" },
   { en:"Clap",  jp:"はくしゅ" },
   { en:"Eco",   jp:"エコ" },
   { en:"Mop",   jp:"モップ" },
-  { en:"Stop",  jp:"ストップ" },
   { en:"Net",   jp:"あみ" },
   { en:"Hunt",  jp:"かり" },
   { en:"Fact",  jp:"じじつ" },
   { en:"Lion",  jp:"ライオン" },
-  { en:"Train", jp:"でんしゃ" },
   { en:"Sun",   jp:"たいよう" },
+  { en:"Ship",  jp:"ふね" },
+  { en:"Shop",  jp:"みせ" },
+  { en:"She",   jp:"かのじょ" },
+  { en:"Seven", jp:"なな" },
 ];
-/* ※ Pen（ペン）は最初は載せない。コマンド機能が解禁された時に追加される */
-const MAP_ILLUST_LATE = { en:"Pen", jp:"ペン" };
 
 /* 置かれるもの（イラスト以外）。行を足し引きするだけで一覧に反映されます */
 const MAP_OBJECTS = [
   { en:"Mirror", jp:"鏡" },
   { en:"Stick",  jp:"ぼう" },
+  { en:"Stop",   jp:"ストップ" },
+  { en:"Bear",   jp:"クマ" },
+  { en:"Car",    jp:"くるま" },
+  { en:"Train",  jp:"でんしゃ" },
+  { en:"Ring",   jp:"ゆびわ" },
 ];
+/* ※ Pen（ペン）は最初は載せない。コマンド機能が解禁された時に「置かれるもの」へ追加される */
+const MAP_OBJECT_LATE = { en:"Pen", jp:"ペン" };
 /* 部屋に置かれている設備 */
 const MAP_ITEMS = [
   { type:"chest",  label:"宝箱",     x:812, y:150 },
@@ -2279,15 +2331,15 @@ function drawMap(animate){
   s += `<g class="pop" style="animation-delay:.85s">
           <line x1="${rx}" y1="${MAP_DOOR.y1}" x2="${rx}" y2="${MAP_DOOR.y2}"
                 stroke="#f5b562" stroke-width="4" stroke-dasharray="14 9" opacity=".9"/>
-          <text x="${rx - 20}" y="${(MAP_DOOR.y1 + MAP_DOOR.y2) / 2}" text-anchor="middle"
+          <text x="${rx + 26}" y="${(MAP_DOOR.y1 + MAP_DOOR.y2) / 2}" text-anchor="middle"
                 font-size="17" font-weight="bold" fill="#f5b562" letter-spacing="6"
-                transform="rotate(-90 ${rx - 20} ${(MAP_DOOR.y1 + MAP_DOOR.y2) / 2})">入口</text>
+                transform="rotate(-90 ${rx + 26} ${(MAP_DOOR.y1 + MAP_DOOR.y2) / 2})">入口</text>
         </g>`;
 
   // 部屋の外（左側）に2列で書き出す：置かれるイラスト ／ 置かれるもの
-  const LY = 116;
+  const LY = 92;
   const drawList = (x, title, rows, dot) => {
-    const w = 126, h = 46 + rows.length * 27;
+    const w = 128, h = 44 + rows.length * 24;
     // 見出し付きのパネルにして、図と一覧をはっきり分ける
     let g = `<rect x="${x - 12}" y="${LY - 50}" width="${w}" height="${h}" rx="10"
                    fill="rgba(13,19,35,.55)" stroke="rgba(150,178,255,.14)"/>
@@ -2295,9 +2347,9 @@ function drawMap(animate){
                    fill="${dot}" opacity=".14"/>
              <text x="${x - 2}" y="${LY - 33}" font-size="12.5" fill="#e8efff" letter-spacing="1.5">${title}</text>`;
     rows.forEach((it, i) => {
-      const y = LY + i * 27;
+      const y = LY + i * 24;
       g += `<circle cx="${x + 2}" cy="${y - 5}" r="3.4" fill="${dot}" opacity=".9"/>
-            <text x="${x + 14}" y="${y}" font-size="13" fill="#e8efff">
+            <text x="${x + 14}" y="${y}" font-size="12" fill="#e8efff">
               <tspan font-family="${MONO}" fill="${dot}">${it.en}</tspan>
               <tspan fill="rgba(143,160,196,.7)"> ─ </tspan>${it.jp}</text>`;
     });
@@ -2373,19 +2425,22 @@ const staff = $("staff");
 let pressTimer = null, staffOpened = false;
 function startPress(){
   staffOpened = false;
-  pressTimer = setTimeout(() => { staff.classList.add("open"); staffOpened = true; }, 2000);
+  pressTimer = setTimeout(() => {
+    // 開いた時点の作中時刻を入れておく（そのまま「設定」を押しても時刻が飛ばない）
+    const t = currentTime();
+    $("staff-time").value = String(t.h).padStart(2,"0") + ":" + String(t.m).padStart(2,"0");
+    staff.classList.add("open"); staffOpened = true;
+  }, 2000);
 }
 function cancelPress(){ clearTimeout(pressTimer); }
-/* RESTART：短押し＝起動モーションを再生してホームへ／約2秒 長押し＝運営用パネル */
+/* 左上のロゴを約2秒 長押しで運営用パネル（短押しでは何も起きない） */
 $("logo").addEventListener("mousedown", startPress);
 $("logo").addEventListener("touchstart", startPress, {passive:true});
 ["mouseup","mouseleave","touchend","touchcancel"].forEach(ev => $("logo").addEventListener(ev, cancelPress));
-$("logo").addEventListener("click", () => {
-  if (staffOpened || staff.classList.contains("open")) { staffOpened = false; return; }
-  playBoot();
-});
+
 
 $("staff-close").addEventListener("click", () => staff.classList.remove("open"));
+$("staff-dismiss").addEventListener("click", () => staff.classList.remove("open"));
 
 /* 待機画面（電源ボタン）へ戻す。時計の計測もそこで止まる */
 $("staff-reboot").addEventListener("click", () => {
@@ -2566,9 +2621,24 @@ function finishBoot(){
   setTimeout(() => home.classList.remove("entering"), 1200);
 }
 
+/* 待機画面は「2回タップ」で起動する（準備中の誤タップ対策）。
+   1回目のタップから2秒以内に2回目が来たときだけ起動モーションが始まる */
+let standbyTaps = 0, standbyT = null;
 bootEl.addEventListener("click", () => {
-  if (bootPlaying) finishBoot();   // 再生中 → スキップ
-  else playBoot();                 // 待機中 → 起動モーション開始
+  if (bootPlaying) { finishBoot(); return; }     // 再生中 → スキップ
+  standbyTaps++;
+  clearTimeout(standbyT);
+  if (standbyTaps >= 2) {
+    standbyTaps = 0;
+    $("boot-start-cap").textContent = "TAP TO START";
+    playBoot();
+  } else {
+    $("boot-start-cap").textContent = "TAP ONCE MORE";
+    standbyT = setTimeout(() => {
+      standbyTaps = 0;
+      $("boot-start-cap").textContent = "TAP TO START";
+    }, 2000);
+  }
 });
 
 /* 待機画面（電源ボタン）へ戻す。時計の計測もここで止まる
@@ -2597,7 +2667,7 @@ function enterFS(){
 /* 解除されても次のタッチで自動復帰（運営パネルから止められる） */
 document.addEventListener("pointerdown", () => { if (keepFullscreen) enterFS(); });
 
-/* 画面端からのスワイプ・ピンチを抑止（ステータスバーは除外：RESTARTを効かせるため） */
+/* 画面端からのスワイプ・ピンチを抑止（ステータスバーは除外：長押しを効かせるため） */
 document.addEventListener("touchstart", e => {
   if (e.target.closest("#statusbar")) return;
   const t = e.touches[0];
@@ -2611,7 +2681,7 @@ document.addEventListener("gesturestart", e => e.preventDefault());
    - hiphop コマンド：同フォルダの hiphop.aac をループ再生（リセットで停止）
    - hear   コマンド：以降のタップ操作に効果音（WebAudio生成・ファイル不要）
    ================================================================ */
-let AUDIO_VOL = 0.85;            // 音楽の音量
+let AUDIO_VOL = 0.30;            // 音楽の音量（スライダーは最大50）
 let SFX_GAIN  = 0.12;            // 効果音の音量（音量に連動）
 let bgm = null, audioCtx = null, sfxOn = false;
 
@@ -2642,6 +2712,7 @@ function sfx(freq = 660, dur = 0.06){
 /* 夜間モード（evening）。通常はずっと白背景＝theme-invert */
 function setNightMode(on){
   document.body.classList.toggle("theme-invert", !on);
+  document.body.classList.toggle("night", on);      // 暗すぎないよう補正をかける
 }
 
 /* ================================================================
@@ -2654,15 +2725,13 @@ function setNightMode(on){
 const CMD_WORDS = [
   // 並び順から答えのペアが読めないようにシャッフルしてある
   { en:"hunt",  jp:"かり" },     { en:"clap",  jp:"はくしゅ" },
-  { en:"gold",  jp:"きんか" },   { en:"car",   jp:"くるま" },
+  { en:"she",   jp:"かのじょ" }, { en:"car",   jp:"くるま" },
   { en:"ship",  jp:"ふね" },     { en:"lion",  jp:"ライオン" },
-  { en:"stick", jp:"ぼう" },     { en:"ice",   jp:"こおり" },
-  { en:"seven", jp:"なな" },     { en:"stop",  jp:"ストップ" },
-  { en:"bird",  jp:"とり" },     { en:"eco",   jp:"エコ" },
-  { en:"she",   jp:"かのじょ" }, { en:"net",   jp:"あみ" },
-  { en:"star",  jp:"ほし" },     { en:"fact",  jp:"じじつ" },
+  { en:"stick", jp:"ぼう" },     { en:"seven", jp:"なな" },
+  { en:"stop",  jp:"ストップ" }, { en:"eco",   jp:"エコ" },
+  { en:"net",   jp:"あみ" },     { en:"fact",  jp:"じじつ" },
   { en:"train", jp:"でんしゃ" }, { en:"shop",  jp:"みせ" },
-  { en:"moon",  jp:"つき" },     { en:"ring",  jp:"ゆびわ" },
+  { en:"ring",  jp:"ゆびわ" },
 ];
 /* 存在する簡易コマンド（これ以外の組み合わせは「無反応」） */
 const CMD_VALID = {
@@ -2692,14 +2761,15 @@ function unlockCommandMode(){
   card.hidden = false;
   card.classList.add("notify");                  // NEWバッジ＋明滅（開くまで出し続ける）
   if (!REDUCED) card.style.animation = "riseIn .6s cubic-bezier(.2,.8,.25,1) both";
-  // マップに「ペン」が増える
-  if (!MAP_ILLUSTS.some(w => w.en === MAP_ILLUST_LATE.en)) {
-    MAP_ILLUSTS.push(MAP_ILLUST_LATE);
+  // マップの「置かれるもの」に ペン が増える
+  if (!MAP_OBJECTS.some(w => w.en === MAP_OBJECT_LATE.en)) {
+    MAP_OBJECTS.push(MAP_OBJECT_LATE);
     drawMap(false);
   }
   $("settings-btn").classList.add("newmark");    // ⚙設定に NEW を付けて…
   $("set-manual").classList.add("newmark");      // …設定の中の「取扱説明書」にも NEW
-  showToast("新機能が追加されました ─ ⚙ 設定 の取扱説明書をご覧ください");
+  // 少し待ってからスポットライトで案内（カードの出現アニメの後）
+  setTimeout(() => showSpotlight("settings-btn"), REDUCED ? 0 : 900);
 }
 
 /* --- 時計カードのロック解除（看板の完成 / 運営パネルの復旧ボタン） --- */
@@ -2873,6 +2943,7 @@ function doFullReset(){
   hideMission();                    // MISSION COMPLETE の表示も消す
   $("settings-btn").classList.remove("newmark");
   $("set-manual").classList.remove("newmark");
+  hideSpotlight();
   cmdSlot1 = null; cmdSlot2 = null;
   renderCmdUI();
   $("cmd-effect").textContent = "すべてリセットしました";
@@ -2896,14 +2967,33 @@ function doFullReset(){
 })();
 renderCmdUI();
 
-/* --- CLOCK ON 演出（看板の完成で時計が出現したとき） --- */
+/* --- CLOCK ON 演出（時計が初めて追加されたときだけ表示する） --- */
+let clockOnShown = false;
 function showClockOn(){
+  if (clockOnShown) return;    // 2回目以降（リセット後の再取得など）は出さない
+  clockOnShown = true;
   const el = $("clockon");
   el.classList.remove("show");
   void el.offsetWidth;
   el.classList.add("show");   // 消えるのはホームに戻ったとき（goHome）
 }
 function hideClockOn(){ $("clockon").classList.remove("show"); }
+
+/* --- スポットライト案内：指定した要素だけを明るく残して案内を出す --- */
+function showSpotlight(targetId){
+  const el = $(targetId), box = $("spot"), hole = $("spot-hole"), msg = $("spot-msg");
+  const r = el.getBoundingClientRect();
+  const pad = 10;
+  hole.style.left   = (r.left - pad) + "px";
+  hole.style.top    = (r.top  - pad) + "px";
+  hole.style.width  = (r.width  + pad * 2) + "px";
+  hole.style.height = (r.height + pad * 2) + "px";
+  box.classList.add("show");
+  // 吹き出しは穴の下に、画面からはみ出さない位置へ
+  msg.style.top = (r.bottom + 18) + "px";
+  msg.style.right = Math.max(12, window.innerWidth - r.right - 8) + "px";
+}
+function hideSpotlight(){ $("spot").classList.remove("show"); }
 
 /* --- MISSION COMPLETE（看板の6文字が全点灯したとき） --- */
 function showMission(){
@@ -3082,7 +3172,10 @@ function startRain(){
 /* ================================================================
    設定（右上の ⚙ 設定）：取扱説明書 / 音量 / 明るさ
    ================================================================ */
-$("settings-btn").addEventListener("click", () => $("settings").classList.add("open"));
+$("settings-btn").addEventListener("click", () => {
+  hideSpotlight();
+  $("settings").classList.add("open");
+});
 $("set-close").addEventListener("click", () => $("settings").classList.remove("open"));
 
 /* 音量（音楽と効果音の両方に反映） */
@@ -3109,6 +3202,7 @@ function manualURL(){
   return "manual.html" + (p.length ? "?" + p.join("&") : "");
 }
 $("set-manual").addEventListener("click", () => {
+  hideSpotlight();
   $("settings-btn").classList.remove("newmark");   // 取扱説明書を開いたら NEW を消す
   $("set-manual").classList.remove("newmark");
   $("manual-frame").src = manualURL();
