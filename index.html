@@ -41,6 +41,7 @@
      - 右上の「⚙ 設定」：取扱説明書
      - 取扱説明書（manual.html を同フォルダに配置）：設定から端末内ビューアで表示
        コマンド解禁後は cmd=1、時計解禁後は clk=1 が付き、該当章が解禁版に変わる
+     - 待機画面は「長押し（約1.2秒）」で起動。誤タップでは始まらない
      - 起動モーションは再生中のタップでスキップ可
      ============================================================ */
   :root{
@@ -849,7 +850,14 @@
     width:118px; height:118px;
     filter:drop-shadow(0 0 22px rgba(111,141,255,.55));
     animation:breathe 2.6s ease-in-out infinite;
+    transition:filter .2s, transform .2s;
   }
+  /* 長押し中：ボタンが明るくなって「効いている」ことを示す */
+  #boot.holding #boot-power{
+    animation:none; transform:scale(1.06);
+    filter:drop-shadow(0 0 34px rgba(111,141,255,.95)) brightness(1.25);
+  }
+  #boot.holding #boot-start-cap{animation:none; opacity:1; color:var(--ice);}
   @keyframes breathe{
     0%,100%{transform:scale(1); opacity:.72;}
     50%{transform:scale(1.07); opacity:1;}
@@ -954,6 +962,12 @@
     color:#0a0f1e; border:none; font-weight:700;
   }
   #staff .note, #settings .note{font-size:.78rem; color:var(--sub); line-height:1.7;}
+  /* 予約中の復旧ボタン（「設定」を押すと反映される） */
+  #staff button.armed{
+    border-color:rgba(111,141,255,.65); color:var(--ice);
+    background:rgba(111,141,255,.18);
+    box-shadow:0 0 14px rgba(111,141,255,.25);
+  }
   /* 音量・明るさのスライダー */
   #settings label.slider{gap:14px;}
   #settings label.slider .lb{flex:0 0 auto; width:3.6em; letter-spacing:.12em;}
@@ -994,7 +1008,7 @@
       <path d="M 42 18.7 A 20 20 0 1 1 22 18.7"/>
       <line x1="32" y1="12" x2="32" y2="32"/>
     </svg>
-    <span id="boot-start-cap">TAP TO START</span>
+    <span id="boot-start-cap">HOLD TO START</span>
   </div>
   <div id="boot-play">
     <div id="boot-logo"></div>
@@ -1265,7 +1279,7 @@
     <label>
       <button id="staff-reboot" type="button">待機画面へ戻す（時計も停止）</button>
     </label>
-    <span class="note">待機画面をタップした瞬間から作中時刻 <b class="start-time">19:30</b> で進行します（作中公演は 20:00〜20:30）。<b>Ctrl + Shift</b> を同時押しすると、いつでも <b class="start-time">19:30</b> にリセットできます。全画面表示の解除・再開は上のボタンで即座に切り替わります（解除中はタッチしても全画面に戻りません）。</span>
+    <span class="note">復旧用のボタンは押した瞬間に反映されます。<b>✓</b> が付いた状態でもう一度押せば取り消せます。案内（チュートリアル）は青い <b>設定</b> を押すと始まります。<br>待機画面を長押しした瞬間から作中時刻 <b class="start-time">19:30</b> で進行します（作中公演は 20:00〜20:30）。<b>Ctrl + Shift</b> を同時押しすると、いつでも <b class="start-time">19:30</b> にリセットできます。全画面表示の解除・再開は上のボタンで即座に切り替わります（解除中はタッチしても全画面に戻りません）。</span>
     <div class="row">
       <button id="staff-apply">時計をこの時刻に設定</button>
       <button id="staff-dismiss">閉じる</button>
@@ -2291,9 +2305,8 @@ const MAP_OBJECTS = [
   { en:"Car",    jp:"くるま" },
   { en:"Train",  jp:"でんしゃ" },
   { en:"Ring",   jp:"ゆびわ" },
+  { en:"Pen",    jp:"ペン" },
 ];
-/* ※ Pen（ペン）は最初は載せない。コマンド機能が解禁された時に「置かれるもの」へ追加される */
-const MAP_OBJECT_LATE = { en:"Pen", jp:"ペン" };
 /* 部屋に置かれている設備 */
 const MAP_ITEMS = [
   { type:"chest",  label:"宝箱",     x:812, y:150 },
@@ -2429,6 +2442,7 @@ function startPress(){
     // 開いた時点の作中時刻を入れておく（そのまま「設定」を押しても時刻が飛ばない）
     const t = currentTime();
     $("staff-time").value = String(t.h).padStart(2,"0") + ":" + String(t.m).padStart(2,"0");
+    renderStaffPending();                 // 今の解禁状態をボタンに反映
     staff.classList.add("open"); staffOpened = true;
   }, 2000);
 }
@@ -2439,8 +2453,8 @@ $("logo").addEventListener("touchstart", startPress, {passive:true});
 ["mouseup","mouseleave","touchend","touchcancel"].forEach(ev => $("logo").addEventListener(ev, cancelPress));
 
 
-$("staff-close").addEventListener("click", () => staff.classList.remove("open"));
-$("staff-dismiss").addEventListener("click", () => staff.classList.remove("open"));
+$("staff-close").addEventListener("click", staffCommit);      // 青「設定」＝反映して閉じる
+$("staff-dismiss").addEventListener("click", staffCancel);    // 灰「閉じる」＝取り消して閉じる
 
 /* 待機画面（電源ボタン）へ戻す。時計の計測もそこで止まる */
 $("staff-reboot").addEventListener("click", () => {
@@ -2449,8 +2463,59 @@ $("staff-reboot").addEventListener("click", () => {
 });
 
 /* リロード後の復旧用：進行状態に合わせて手動で戻す */
-$("staff-show-clock").addEventListener("click", () => { revealClockCard(); showToast("時計のロックを解除しました"); });
-$("staff-unlock-cmd").addEventListener("click", () => { unlockCommandMode(); });
+/* 復旧用ボタンは「今の状態を表すトグル」。押した瞬間に反映される。
+   ✓ が付いている状態でもう一度押せば取り消せる（付け間違いを戻せる）。
+   チュートリアルのスポットライトだけは、青い「設定」を押した時に始まる */
+let tutorialPending = false;
+
+function renderStaffPending(){
+  $("staff-show-clock").classList.toggle("armed", clockCardUnlocked);
+  $("staff-unlock-cmd").classList.toggle("armed", cmdUnlocked);
+  $("staff-show-clock").textContent = clockCardUnlocked ? "✓ 時計ロック解除" : "時計ロック解除";
+  $("staff-unlock-cmd").textContent = cmdUnlocked       ? "✓ コマンド解禁"   : "コマンド解禁";
+}
+
+/* 時計：付け外し */
+function relockClockCard(){
+  clockCardUnlocked = false;
+  $("home-clock").classList.add("locked");
+  $("home-clock").classList.remove("notify");
+  hideClockOn();
+}
+$("staff-show-clock").addEventListener("click", () => {
+  if (clockCardUnlocked) relockClockCard();
+  else { revealClockCard(); showClockOn(); notifyClock(); }
+  renderStaffPending();
+});
+
+/* コマンド：付け外し（外すとマップのペンも戻す） */
+function lockCommandMode(){
+  cmdUnlocked = false;
+  tutorialPending = false;
+  const card = $("home-command");
+  card.hidden = true;
+  card.classList.remove("notify");
+  $("settings-btn").classList.remove("newmark");
+  $("set-manual").classList.remove("newmark");
+  hideSpotlight();
+}
+$("staff-unlock-cmd").addEventListener("click", () => {
+  if (cmdUnlocked) lockCommandMode();
+  else { unlockCommandMode(); tutorialPending = true; }   // 案内は「設定」を押してから
+  renderStaffPending();
+});
+
+/* 灰「閉じる」＝そのまま閉じる（すでに反映済みなので取り消しはしない） */
+function staffCancel(){ staff.classList.remove("open"); }
+
+/* 青「設定」＝閉じたうえで、必要ならチュートリアルを開始する */
+function staffCommit(){
+  staff.classList.remove("open");
+  if (tutorialPending && cmdUnlocked) {
+    tutorialPending = false;
+    setTimeout(() => showSpotlight("settings-btn"), REDUCED ? 0 : 420);
+  }
+}
 
 /* 全画面の解除／再開（押した瞬間に切り替わる） */
 $("staff-fs-btn").addEventListener("click", () => {
@@ -2621,25 +2686,30 @@ function finishBoot(){
   setTimeout(() => home.classList.remove("entering"), 1200);
 }
 
-/* 待機画面は「2回タップ」で起動する（準備中の誤タップ対策）。
-   1回目のタップから2秒以内に2回目が来たときだけ起動モーションが始まる */
-let standbyTaps = 0, standbyT = null;
-bootEl.addEventListener("click", () => {
-  if (bootPlaying) { finishBoot(); return; }     // 再生中 → スキップ
-  standbyTaps++;
-  clearTimeout(standbyT);
-  if (standbyTaps >= 2) {
-    standbyTaps = 0;
-    $("boot-start-cap").textContent = "TAP TO START";
+/* 待機画面は「長押し」で起動する（準備中の誤タップ対策）。
+   BOOT_HOLD_MS 押し続けたときだけ起動モーションが始まる */
+const BOOT_HOLD_MS = 1200;
+let bootHoldT = null;
+function bootHoldStart(e){
+  if (bootPlaying) { finishBoot(); return; }     // 再生中 → タップでスキップ
+  if (bootHoldT) return;
+  e.preventDefault();
+  bootEl.classList.add("holding");
+  $("boot-start-cap").textContent = "KEEP HOLDING…";
+  bootHoldT = setTimeout(() => {
+    bootHoldT = null;
+    bootEl.classList.remove("holding");
+    $("boot-start-cap").textContent = "HOLD TO START";
     playBoot();
-  } else {
-    $("boot-start-cap").textContent = "TAP ONCE MORE";
-    standbyT = setTimeout(() => {
-      standbyTaps = 0;
-      $("boot-start-cap").textContent = "TAP TO START";
-    }, 2000);
-  }
-});
+  }, BOOT_HOLD_MS);
+}
+function bootHoldCancel(){
+  if (bootHoldT) { clearTimeout(bootHoldT); bootHoldT = null; }
+  bootEl.classList.remove("holding");
+  $("boot-start-cap").textContent = "HOLD TO START";
+}
+bootEl.addEventListener("pointerdown", bootHoldStart);
+["pointerup","pointerleave","pointercancel"].forEach(ev => bootEl.addEventListener(ev, bootHoldCancel));
 
 /* 待機画面（電源ボタン）へ戻す。時計の計測もここで止まる
    ＝次にタップされたとき、また SHOW_START から進み始める */
@@ -2761,15 +2831,9 @@ function unlockCommandMode(){
   card.hidden = false;
   card.classList.add("notify");                  // NEWバッジ＋明滅（開くまで出し続ける）
   if (!REDUCED) card.style.animation = "riseIn .6s cubic-bezier(.2,.8,.25,1) both";
-  // マップの「置かれるもの」に ペン が増える
-  if (!MAP_OBJECTS.some(w => w.en === MAP_OBJECT_LATE.en)) {
-    MAP_OBJECTS.push(MAP_OBJECT_LATE);
-    drawMap(false);
-  }
   $("settings-btn").classList.add("newmark");    // ⚙設定に NEW を付けて…
   $("set-manual").classList.add("newmark");      // …設定の中の「取扱説明書」にも NEW
-  // 少し待ってからスポットライトで案内（カードの出現アニメの後）
-  setTimeout(() => showSpotlight("settings-btn"), REDUCED ? 0 : 900);
+  // スポットライトの案内は、運営パネルの「設定」を押した時に出す
 }
 
 /* --- 時計カードのロック解除（看板の完成 / 運営パネルの復旧ボタン） --- */
