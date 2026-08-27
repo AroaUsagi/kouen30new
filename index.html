@@ -2284,11 +2284,11 @@ const MAP_DESKS = [
 const MAP_ILLUSTS = [
   { en:"Clap",  jp:"はくしゅ" },
   { en:"Eco",   jp:"エコ" },
-  { en:"Mop",   jp:"モップ" },
-  { en:"Net",   jp:"あみ" },
-  { en:"Hunt",  jp:"かり" },
   { en:"Fact",  jp:"じじつ" },
+  { en:"Mop",   jp:"モップ" },
+  { en:"Hunt",  jp:"かり" },
   { en:"Lion",  jp:"ライオン" },
+  { en:"Ring",  jp:"ゆびわ" },
   { en:"Sun",   jp:"たいよう" },
   { en:"Ship",  jp:"ふね" },
   { en:"Shop",  jp:"みせ" },
@@ -2298,14 +2298,14 @@ const MAP_ILLUSTS = [
 
 /* 置かれるもの（イラスト以外）。行を足し引きするだけで一覧に反映されます */
 const MAP_OBJECTS = [
-  { en:"Mirror", jp:"鏡" },
-  { en:"Stick",  jp:"ぼう" },
-  { en:"Stop",   jp:"ストップ" },
-  { en:"Pen",    jp:"ペン" },
   { en:"Bear",   jp:"クマ" },
   { en:"Car",    jp:"くるま" },
+  { en:"Mirror", jp:"かがみ" },
+  { en:"Net",    jp:"あみ" },
+  { en:"Pen",    jp:"ペン" },
+  { en:"Stick",  jp:"ぼう" },
+  { en:"Stop",   jp:"ストップ" },
   { en:"Train",  jp:"でんしゃ" },
-  { en:"Ring",   jp:"ゆびわ" },
 ];
 /* 部屋に置かれている設備 */
 const MAP_ITEMS = [
@@ -2793,16 +2793,22 @@ function setNightMode(on){
    - ダミーも含め、すべてのコマンドが看板の文字をトグルする
    ================================================================ */
 const CMD_WORDS = [
-  // 並び順から答えのペアが読めないようにシャッフルしてある
-  { en:"hunt",  jp:"かり" },     { en:"clap",  jp:"はくしゅ" },
-  { en:"she",   jp:"かのじょ" }, { en:"car",   jp:"くるま" },
-  { en:"ship",  jp:"ふね" },     { en:"lion",  jp:"ライオン" },
-  { en:"stick", jp:"ぼう" },     { en:"seven", jp:"なな" },
-  { en:"stop",  jp:"ストップ" }, { en:"eco",   jp:"エコ" },
-  { en:"net",   jp:"あみ" },     { en:"fact",  jp:"じじつ" },
-  { en:"train", jp:"でんしゃ" }, { en:"shop",  jp:"みせ" },
-  { en:"ring",  jp:"ゆびわ" },
+  // マップに載っているもの（イラスト12＋もの8）と同じ20語
+  { en:"clap",  jp:"はくしゅ" }, { en:"eco",   jp:"エコ" },
+  { en:"fact",  jp:"じじつ" },   { en:"mop",   jp:"モップ" },
+  { en:"hunt",  jp:"かり" },     { en:"lion",  jp:"ライオン" },
+  { en:"ring",  jp:"ゆびわ" },   { en:"sun",   jp:"たいよう" },
+  { en:"ship",  jp:"ふね" },     { en:"shop",  jp:"みせ" },
+  { en:"she",   jp:"かのじょ" }, { en:"seven", jp:"なな" },
+  { en:"bear",  jp:"クマ" },     { en:"car",   jp:"くるま" },
+  { en:"mirror",jp:"かがみ" },   { en:"net",   jp:"あみ" },
+  { en:"pen",   jp:"ペン" },     { en:"stick", jp:"ぼう" },
+  { en:"stop",  jp:"ストップ" }, { en:"train", jp:"でんしゃ" },
 ];
+/* 謎の答えになっている語。ここで作っても効果はないが、
+   「無反応」だと違和感が出るので使用済みとして返す */
+const CMD_PSEUDO = ["ear", "open"];
+
 /* 存在する簡易コマンド（これ以外の組み合わせは「無反応」） */
 const CMD_VALID = {
   laptop:  { msg:"端末に簡易コマンドリセットボタンが追加された。" },
@@ -2931,6 +2937,7 @@ function renderSign(){
 /* --- コマンド実行の中核 ---
    存在しないコマンド → null を返して「無反応」。何度でも実行可 */
 function executeCommand(merged){
+  if (CMD_PSEUDO.includes(merged)) return "このコマンドは既に使用済みだ。";  // 回数は減らさない
   const entry = CMD_VALID[merged];
   if (!entry) return null;                                        // 存在しない → 無反応
   if (usedCommands.has(merged)) return "このコマンドは既に使用済みだ。";   // 同じコマンドは1回だけ
