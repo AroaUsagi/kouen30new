@@ -31,7 +31,7 @@
        「リセット」＝看板の点灯とコマンドの効果をすべて元に戻す
        効果は画面下の「コマンドの効果」欄に表示
        電気看板の6文字が全点灯すると MISSION COMPLETE を表示
-       ダミー：hiphop(ship+shop)=hiphop.aac をループ再生（リセットで停止）/
+       ダミー：hiphop(ship+shop)=hiphop.aac を3回再生（リセットで停止）/
                hear(she+car)=以降のタップに効果音 /
                evening(seven+ring)=夜間モード（画面が黒くなる）
        ※laptop・ticket は中身のないコマンド（看板の l,o / c,k 点灯用）
@@ -2756,7 +2756,7 @@ document.addEventListener("gesturestart", e => e.preventDefault());
 
 /* ================================================================
    音声（音量は設定のスライダーで変更）
-   - hiphop コマンド：同フォルダの hiphop.aac をループ再生（リセットで停止）
+   - hiphop コマンド：同フォルダの hiphop.aac を3回再生（リセットで停止）
    - hear   コマンド：以降のタップ操作に効果音（WebAudio生成・ファイル不要）
    ================================================================ */
 /* 音量の上限。スライダーを最大(100)にしても、端末の音量に対して
@@ -2766,17 +2766,28 @@ let AUDIO_VOL = 0.60 * VOL_CEILING;   // 音楽の音量（実際に Audio へ�
 let SFX_GAIN  = 0.14 * AUDIO_VOL;     // 効果音の音量（音量に連動）
 let bgm = null, audioCtx = null, sfxOn = false;
 
+const HIPHOP_LOOPS = 3;            // 音楽を鳴らす回数（3回で自動的に止まる）
+let bgmPlays = 0;
 function playHiphop(){
   try {
-    bgm = bgm || new Audio("hiphop.aac");
-    bgm.loop = true;                 // リセットするまで繰り返す
+    if (!bgm) {
+      bgm = new Audio("hiphop.aac");
+      // 1回終わるたびに数え、HIPHOP_LOOPS 回で止める
+      bgm.addEventListener("ended", () => {
+        bgmPlays++;
+        if (bgmPlays < HIPHOP_LOOPS) { bgm.currentTime = 0; bgm.play().catch(()=>{}); }
+      });
+    }
+    bgm.loop = false;                // ended を拾うためループ属性は使わない
     bgm.volume = AUDIO_VOL;
+    bgmPlays = 0;
     bgm.currentTime = 0;
     bgm.play().catch(()=>{});
   } catch(e){}
 }
 function stopHiphop(){
   if (!bgm) return;
+  bgmPlays = HIPHOP_LOOPS;           // 途中で止めたときは再開させない
   try { bgm.pause(); bgm.currentTime = 0; } catch(e){}
 }
 function sfx(freq = 660, dur = 0.06){
