@@ -869,7 +869,7 @@
     50%{transform:scale(1.07); opacity:1;}
   }
   #boot-start-cap{
-    font-family:var(--mono); font-size:.7rem; letter-spacing:.46em; text-indent:.46em;
+    font-size:.86rem; letter-spacing:.3em; text-indent:.3em;
     color:var(--sub); animation:capfade 2.6s ease-in-out infinite;
   }
   @keyframes capfade{0%,100%{opacity:.35;} 50%{opacity:1;}}
@@ -1014,7 +1014,7 @@
       <path d="M 42 18.7 A 20 20 0 1 1 22 18.7"/>
       <line x1="32" y1="12" x2="32" y2="32"/>
     </svg>
-    <span id="boot-start-cap">HOLD TO START</span>
+    <span id="boot-start-cap">長押しでスタート</span>
   </div>
   <div id="boot-play">
     <div id="boot-logo"></div>
@@ -2158,7 +2158,7 @@ function colonSVG(cx, visible, scale = 1){
    運営用パネル（ロゴ長押し）で任意時刻にも変更可能 */
 /* ★開始時刻はここだけ変えればOK（運営パネルの初期値と説明文も自動で追随します） */
 const SHOW_START = { h: 19, m: 30 };           // 待機画面をタップした瞬間の作中時刻
-const CLOCK_DATE_TEXT = "08.28 FRI";           // 日付（曜日表記は自由に変更可）
+const CLOCK_DATE_TEXT = "08.29 SAT";           // 日付（曜日表記は自由に変更可）
 
 let clockMode = "manual";     // "real" | "manual"
 let clockStarted = false;     // 最初にホーム画面が開いた瞬間から進み始める
@@ -2697,18 +2697,18 @@ function bootHoldStart(e){
   if (bootHoldT) return;
   e.preventDefault();
   bootEl.classList.add("holding");
-  $("boot-start-cap").textContent = "KEEP HOLDING…";
+  $("boot-start-cap").textContent = "そのまま押し続けてください…";
   bootHoldT = setTimeout(() => {
     bootHoldT = null;
     bootEl.classList.remove("holding");
-    $("boot-start-cap").textContent = "HOLD TO START";
+    $("boot-start-cap").textContent = "長押しでスタート";
     playBoot();
   }, BOOT_HOLD_MS);
 }
 function bootHoldCancel(){
   if (bootHoldT) { clearTimeout(bootHoldT); bootHoldT = null; }
   bootEl.classList.remove("holding");
-  $("boot-start-cap").textContent = "HOLD TO START";
+  $("boot-start-cap").textContent = "長押しでスタート";
 }
 bootEl.addEventListener("pointerdown", bootHoldStart);
 ["pointerup","pointerleave","pointercancel"].forEach(ev => bootEl.addEventListener(ev, bootHoldCancel));
