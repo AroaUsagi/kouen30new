@@ -207,7 +207,7 @@
     </div>
     <nav class="toc"><a href="#s01">00 ホーム</a><a href="#s02">01 時計</a>
       <a href="#s03">02 翻訳</a><a href="#s04">03 マップ</a>
-      <a href="#s05"><span class="only-locked">04 ▓▓▓▓</span><span class="only-open">04 コマンド</span></a>
+      <a href="#s05"><span class="only-locked">04 ▓▓▓▓</span><span class="only-open">04 簡易コマンド</span></a>
     </nav>
   </header>
 
@@ -336,7 +336,7 @@
               <path d="M-22 -8 L-14 -1 L-22 6"/>
               <path d="M-6 8 H20"/>
             </g>
-            <text x="98" y="216" text-anchor="middle" font-size="16" letter-spacing="6" fill="#e8efff">コマンド</text>
+            <text x="98" y="216" text-anchor="middle" font-size="13" letter-spacing="3" fill="#e8efff">簡易コマンド</text>
             <text class="m" x="176" y="216" text-anchor="end" font-size="14" fill="#8fa0c4">›</text>
             <circle cx="188" cy="12" r="13" fill="#6f8dff"/><text class="m" x="188" y="17" text-anchor="middle" font-size="13" font-weight="700" fill="#0a0f1e">5</text>
           </g>
@@ -349,7 +349,7 @@
         <li><span class="tag">2</span><span><b>01 時計</b>　<span class="only-noclk">ロック中・いまは開けません</span><span class="only-clk">現在時刻を表示</span></span></li>
         <li><span class="tag">3</span><span><b>02 翻訳</b>　ことばを英語に翻訳</span></li>
         <li><span class="tag">4</span><span><b>03 マップ</b>　ブース内の案内</span></li>
-        <li class="only-open"><span class="tag">5</span><span><b>04 コマンド</b>　ワードを組み合わせて実行</span></li>
+        <li class="only-open"><span class="tag">5</span><span><b>04 簡易コマンド</b>　ワードを組み合わせて実行</span></li>
       </ol>
       <ul class="plain">
         <li>各機能をひらいたあとは、画面左上の <span class="kbd">← HOME</span> でいつでもホームに戻れます</li>
@@ -504,7 +504,7 @@
       </div>
     </div>
     <div class="only-open">
-      <div class="sec-head"><span class="sec-no">04</span><h2>コマンド</h2><span class="sec-en">QUICK COMMAND</span></div>
+      <div class="sec-head"><span class="sec-no">04</span><h2>簡易コマンド</h2><span class="sec-en">QUICK COMMAND</span></div>
 
       <div class="fig">
         <svg viewBox="0 0 980 470" role="img" aria-label="コマンド画面の各部">
@@ -512,27 +512,55 @@
           <line x1="20" y1="70" x2="960" y2="70" stroke="rgba(150,178,255,.18)"/>
           <rect x="42" y="30" width="104" height="26" rx="9" fill="#121a2e" stroke="rgba(150,178,255,.3)"/>
           <text class="m" x="94" y="47" text-anchor="middle" font-size="10" letter-spacing="2" fill="#8fa0c4">← HOME</text>
-          <text x="490" y="48" text-anchor="middle" font-size="13" letter-spacing="8" fill="#e8efff">コマンド</text>
+          <text x="490" y="48" text-anchor="middle" font-size="13" letter-spacing="6" fill="#e8efff">簡易コマンド</text>
 
           <!-- 左：ワードを選ぶ -->
-          <rect x="44" y="90" width="520" height="264" rx="14" fill="rgba(19,26,44,.7)" stroke="rgba(150,178,255,.18)"/>
+          <rect x="44" y="90" width="520" height="272" rx="14" fill="rgba(19,26,44,.7)" stroke="rgba(150,178,255,.18)"/>
           <circle cx="70" cy="115" r="10" fill="rgba(111,141,255,.18)" stroke="#6f8dff"/>
           <text class="m" x="70" y="119" text-anchor="middle" font-size="10" font-weight="700" fill="#6f8dff">1</text>
           <text x="90" y="120" font-size="12" fill="#8fa0c4" letter-spacing="2">ワードを選ぶ</text>
           <g fill="#141c33" stroke="rgba(150,178,255,.22)">
-            <rect x="62" y="136" width="118" height="44" rx="9"/><rect x="190" y="136" width="118" height="44" rx="9"/>
-            <rect x="318" y="136" width="118" height="44" rx="9"/><rect x="446" y="136" width="100" height="44" rx="9"/>
-            <rect x="62" y="188" width="118" height="44" rx="9"/><rect x="190" y="188" width="118" height="44" rx="9"/>
-            <rect x="318" y="188" width="118" height="44" rx="9"/><rect x="446" y="188" width="100" height="44" rx="9"/>
-            <rect x="62" y="240" width="118" height="44" rx="9"/><rect x="190" y="240" width="118" height="44" rx="9"/>
-            <rect x="318" y="240" width="118" height="44" rx="9"/><rect x="446" y="240" width="100" height="44" rx="9"/>
-            <rect x="62" y="292" width="118" height="44" rx="9"/><rect x="190" y="292" width="118" height="44" rx="9"/>
-            <rect x="318" y="292" width="118" height="44" rx="9"/><rect x="446" y="292" width="100" height="44" rx="9"/>
+            <rect x="62" y="132" width="112" height="38" rx="8"/>
+            <rect x="186" y="132" width="112" height="38" rx="8"/>
+            <rect x="310" y="132" width="112" height="38" rx="8"/>
+            <rect x="434" y="132" width="112" height="38" rx="8"/>
+            <rect x="62" y="176" width="112" height="38" rx="8"/>
+            <rect x="186" y="176" width="112" height="38" rx="8"/>
+            <rect x="310" y="176" width="112" height="38" rx="8"/>
+            <rect x="434" y="176" width="112" height="38" rx="8"/>
+            <rect x="62" y="220" width="112" height="38" rx="8"/>
+            <rect x="186" y="220" width="112" height="38" rx="8"/>
+            <rect x="310" y="220" width="112" height="38" rx="8"/>
+            <rect x="434" y="220" width="112" height="38" rx="8"/>
+            <rect x="62" y="264" width="112" height="38" rx="8"/>
+            <rect x="186" y="264" width="112" height="38" rx="8"/>
+            <rect x="310" y="264" width="112" height="38" rx="8"/>
+            <rect x="434" y="264" width="112" height="38" rx="8"/>
+            <rect x="62" y="308" width="112" height="38" rx="8"/>
+            <rect x="186" y="308" width="112" height="38" rx="8"/>
+            <rect x="310" y="308" width="112" height="38" rx="8"/>
+            <rect x="434" y="308" width="112" height="38" rx="8"/>
           </g>
-          <text class="m" x="121" y="158" text-anchor="middle" font-size="12" fill="#e8efff">clap</text>
-          <text x="121" y="172" text-anchor="middle" font-size="8" fill="#8fa0c4">はくしゅ</text>
-          <text class="m" x="249" y="158" text-anchor="middle" font-size="12" fill="#e8efff">stop</text>
-          <text x="249" y="172" text-anchor="middle" font-size="8" fill="#8fa0c4">ストップ</text>
+          <text class="m" x="118" y="150" text-anchor="middle" font-size="11" fill="#e8efff">clap</text><text x="118" y="162" text-anchor="middle" font-size="7.5" fill="#8fa0c4">はくしゅ</text>
+          <text class="m" x="242" y="150" text-anchor="middle" font-size="11" fill="#e8efff">eco</text><text x="242" y="162" text-anchor="middle" font-size="7.5" fill="#8fa0c4">エコ</text>
+          <text class="m" x="366" y="150" text-anchor="middle" font-size="11" fill="#e8efff">fact</text><text x="366" y="162" text-anchor="middle" font-size="7.5" fill="#8fa0c4">じじつ</text>
+          <text class="m" x="490" y="150" text-anchor="middle" font-size="11" fill="#e8efff">hunt</text><text x="490" y="162" text-anchor="middle" font-size="7.5" fill="#8fa0c4">かり</text>
+          <text class="m" x="118" y="194" text-anchor="middle" font-size="11" fill="#e8efff">lion</text><text x="118" y="206" text-anchor="middle" font-size="7.5" fill="#8fa0c4">ライオン</text>
+          <text class="m" x="242" y="194" text-anchor="middle" font-size="11" fill="#e8efff">mop</text><text x="242" y="206" text-anchor="middle" font-size="7.5" fill="#8fa0c4">モップ</text>
+          <text class="m" x="366" y="194" text-anchor="middle" font-size="11" fill="#e8efff">ring</text><text x="366" y="206" text-anchor="middle" font-size="7.5" fill="#8fa0c4">ゆびわ</text>
+          <text class="m" x="490" y="194" text-anchor="middle" font-size="11" fill="#e8efff">seven</text><text x="490" y="206" text-anchor="middle" font-size="7.5" fill="#8fa0c4">なな</text>
+          <text class="m" x="118" y="238" text-anchor="middle" font-size="11" fill="#e8efff">she</text><text x="118" y="250" text-anchor="middle" font-size="7.5" fill="#8fa0c4">かのじょ</text>
+          <text class="m" x="242" y="238" text-anchor="middle" font-size="11" fill="#e8efff">ship</text><text x="242" y="250" text-anchor="middle" font-size="7.5" fill="#8fa0c4">ふね</text>
+          <text class="m" x="366" y="238" text-anchor="middle" font-size="11" fill="#e8efff">shop</text><text x="366" y="250" text-anchor="middle" font-size="7.5" fill="#8fa0c4">みせ</text>
+          <text class="m" x="490" y="238" text-anchor="middle" font-size="11" fill="#e8efff">sun</text><text x="490" y="250" text-anchor="middle" font-size="7.5" fill="#8fa0c4">たいよう</text>
+          <text class="m" x="118" y="282" text-anchor="middle" font-size="11" fill="#e8efff">bear</text><text x="118" y="294" text-anchor="middle" font-size="7.5" fill="#8fa0c4">クマ</text>
+          <text class="m" x="242" y="282" text-anchor="middle" font-size="11" fill="#e8efff">car</text><text x="242" y="294" text-anchor="middle" font-size="7.5" fill="#8fa0c4">くるま</text>
+          <text class="m" x="366" y="282" text-anchor="middle" font-size="11" fill="#e8efff">mirror</text><text x="366" y="294" text-anchor="middle" font-size="7.5" fill="#8fa0c4">かがみ</text>
+          <text class="m" x="490" y="282" text-anchor="middle" font-size="11" fill="#e8efff">net</text><text x="490" y="294" text-anchor="middle" font-size="7.5" fill="#8fa0c4">あみ</text>
+          <text class="m" x="118" y="326" text-anchor="middle" font-size="11" fill="#e8efff">pen</text><text x="118" y="338" text-anchor="middle" font-size="7.5" fill="#8fa0c4">ペン</text>
+          <text class="m" x="242" y="326" text-anchor="middle" font-size="11" fill="#e8efff">stick</text><text x="242" y="338" text-anchor="middle" font-size="7.5" fill="#8fa0c4">ぼう</text>
+          <text class="m" x="366" y="326" text-anchor="middle" font-size="11" fill="#e8efff">stop</text><text x="366" y="338" text-anchor="middle" font-size="7.5" fill="#8fa0c4">ストップ</text>
+          <text class="m" x="490" y="326" text-anchor="middle" font-size="11" fill="#e8efff">train</text><text x="490" y="338" text-anchor="middle" font-size="7.5" fill="#8fa0c4">でんしゃ</text>
           <circle cx="556" cy="112" r="11" fill="#6f8dff"/><text class="m" x="556" y="116" text-anchor="middle" font-size="11" font-weight="700" fill="#0a0f1e">1</text>
 
           <!-- 右上：実行 -->
